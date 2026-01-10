@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev libzip-dev \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
@@ -10,14 +10,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy project files into container
+# Copy app files
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Create SQLite database file
+RUN mkdir -p database \
+ && touch database/database.sqlite
 
-# Expose Railway port
-EXPOSE 8080
+# Expose Laravel port
+EXPOSE 8000
 
-# Start Laravel (production-safe)
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
+# Start Laravel
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
