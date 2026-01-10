@@ -7,7 +7,8 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <form action="{{ route('guardian.sms.send') }}" method="POST" class="needs-validation" novalidate>
+      <form action="{{ route('appointments.notifyGuardian.manual') }}" method="POST" class="needs-validation" novalidate>
+
         @csrf
         <div class="modal-body px-4 py-3">
           <p class="text-muted small mb-3">

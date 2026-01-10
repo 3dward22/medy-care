@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\Appointment;
 use App\Models\Patient;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
 
 class DashboardController extends Controller
 {
@@ -20,14 +22,26 @@ class DashboardController extends Controller
 
         // 🔑 Check role and show correct dashboard
         switch ($user->role) {
-            case 'admin':
-                $patientsCount = Patient::count();
-                $appointmentsCount = Appointment::count();
+    case 'admin':
 
-                return view('dashboard', [
-                    'patientsCount' => $patientsCount,
-                    'appointmentsCount' => $appointmentsCount
-                ]);
+    $patientsCount = Patient::count();
+    $appointmentsCount = Appointment::count();
+
+    // 📊 Most common causes (from findings column)
+    $commonCauses = Appointment::whereNotNull('findings')
+        ->where('findings', '!=', '')
+        ->select('findings', DB::raw('COUNT(*) as total'))
+        ->groupBy('findings')
+        ->orderByDesc('total')
+        ->limit(5)
+        ->get();
+
+    return view('dashboard', [
+        'patientsCount'     => $patientsCount,
+        'appointmentsCount'=> $appointmentsCount,
+        'commonCauses'      => $commonCauses,   // ✅ important
+    ]);
+
 
             case 'nurse':
                 $todayAppointments = Appointment::with('user')

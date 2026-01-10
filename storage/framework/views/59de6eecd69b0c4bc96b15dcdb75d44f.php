@@ -118,42 +118,78 @@
             <?php if($todayAppointments->count() > 0): ?>
                 <div class="table-responsive">
                     <table class="table align-middle table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Patient Name</th>
-                                <th>Time</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php $__currentLoopData = $todayAppointments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $appointment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <tr>
-                                    <td class="fw-medium"><?php echo e($appointment->user->name ?? 'Unknown'); ?></td>
-                                    <td><?php echo e(\Carbon\Carbon::parse($appointment->requested_datetime)->format('h:i A')); ?></td>
-                                    <td>
-                                        <span class="badge rounded-pill px-3 py-2 
-                                            <?php if($appointment->status === 'pending'): ?> bg-warning text-dark
-                                            <?php elseif($appointment->status === 'approved'): ?> bg-success
-                                            <?php else: ?> bg-secondary
-                                            <?php endif; ?>">
-                                            <?php echo e(ucfirst($appointment->status)); ?>
+    <thead>
+        <tr>
+            <th>Patient Name</th>
+            <th>Time</th>
+            <th>Status / Action</th>
+        </tr>
+    </thead>
 
-                                        </span>
-                                        <?php if($appointment->status === 'approved'): ?>
-    <button
-    class="btn btn-success btn-sm"
-    data-bs-toggle="modal"
-    data-bs-target="#completeAppointmentModal"
-    data-action="<?php echo e(route('nurse.appointments.complete', $appointment->id)); ?>" >
-    Complete
-    </button>
+    <tbody>
+    <?php $__currentLoopData = $todayAppointments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $appointment): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <tr>
+            <td class="fw-medium">
+                <?php echo e($appointment->user->name ?? 'Unknown'); ?>
 
-<?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </tbody>
-                    </table>
+            </td>
+
+            <td>
+                <?php echo e(\Carbon\Carbon::parse($appointment->requested_datetime)->format('h:i A')); ?>
+
+            </td>
+
+           <td>
+    <span class="badge rounded-pill px-3 py-2 
+        <?php if($appointment->status === 'pending'): ?> bg-warning text-dark
+        <?php elseif($appointment->status === 'in_session'): ?> bg-primary
+        <?php elseif($appointment->status === 'completed'): ?> bg-success
+        <?php elseif($appointment->status === 'declined'): ?> bg-danger
+        <?php else: ?> bg-secondary
+        <?php endif; ?>">
+        <?php echo e(ucfirst(str_replace('_',' ', $appointment->status))); ?>
+
+    </span>
+
+    
+    <?php if($appointment->status === 'pending'): ?>
+        <form method="POST"
+              action="<?php echo e(route('nurse.appointments.start', $appointment->id)); ?>"
+              class="d-inline start-session-form">
+            <?php echo csrf_field(); ?>
+            <button class="btn btn-primary btn-sm ms-2">
+                ▶ Start
+            </button>
+        </form>
+
+        <form method="POST"
+              action="<?php echo e(route('nurse.appointments.decline', $appointment->id)); ?>"
+              class="d-inline ms-1">
+            <?php echo csrf_field(); ?>
+            <?php echo method_field('PATCH'); ?>
+            <button class="btn btn-outline-danger btn-sm">
+                ❌ Decline
+            </button>
+        </form>
+    <?php endif; ?>
+
+    
+    <?php if($appointment->status === 'in_session'): ?>
+        <button
+            class="btn btn-success btn-sm ms-2"
+            data-bs-toggle="modal"
+            data-bs-target="#completeAppointmentModal"
+            data-action="<?php echo e(route('nurse.appointments.complete', $appointment->id)); ?>">
+            Complete
+        </button>
+    <?php endif; ?>
+</td>
+
+        </tr>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+    </tbody>
+</table>
+
                 </div>
             <?php else: ?>
                 <div class="text-center py-4 text-muted">No appointments scheduled for today.</div>
@@ -166,7 +202,7 @@
 <div class="card summary-card text-info shadow-sm mb-4 border-0">
     <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-semibold mb-0">🗓️ Upcoming Appointments</h4>
+            <h4 class="fw-semibold mb-0">🗓️ Appointments</h4>
             <span class="badge bg-info text-white px-3 py-2 rounded-pill">
                 Total: <?php echo e($upcomingAppointments->count()); ?>
 
@@ -207,27 +243,26 @@
                         </div>
 
                         <!-- Manage Button -->
-                        <div class="text-end flex-shrink-0" style="width: 120px;">
-                            <?php if(!in_array($appointment->status, ['cancelled', 'declined', 'completed', 'rescheduled', 'approved'])): ?>
-                                <button
-    class="btn btn-outline-primary btn-sm px-3 shadow-sm"
-    data-bs-toggle="modal"
-    data-bs-target="#manageAppointmentModal"
-    data-action="<?php echo e(url('/nurse/appointments/'.$appointment->id)); ?>"
+                        <<div class="text-end flex-shrink-0" style="width: 140px;">
+    <?php if($appointment->status === 'completed'): ?>
+        <span class="badge bg-success px-3 py-2 rounded-pill">
+            ✔ Completed
+        </span>
+    <?php elseif($appointment->status === 'declined'): ?>
+        <span class="badge bg-danger px-3 py-2 rounded-pill">
+            ✖ Declined
+        </span>
+    <?php elseif($appointment->status === 'in_session'): ?>
+        <span class="badge bg-primary px-3 py-2 rounded-pill">
+            🔵 In Session
+        </span>
+    <?php else: ?>
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+            ⏳ Pending
+        </span>
+    <?php endif; ?>
+</div>
 
-    data-approved_datetime="<?php echo e($appointment->approved_datetime); ?>"
-    data-status="<?php echo e($appointment->status); ?>"
-    data-note="<?php echo e($appointment->admin_note); ?>"
-    data-findings="<?php echo e($appointment->findings); ?>">
-    Manage
-</button>
-
-
-
-                            <?php else: ?>
-                                <span class="text-muted small fst-italic">No actions</span>
-                            <?php endif; ?>
-                        </div>
 
                     </li>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -502,6 +537,31 @@ document.addEventListener('DOMContentLoaded', function () {
             saveBtn.innerHTML = '💾 Save';
         }
     });
+    // START SESSION via AJAX
+document.querySelectorAll('.start-session-form').forEach(form => {
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message);
+
+            toastr.success('Session started');
+            setTimeout(() => location.reload(), 600);
+        } catch (err) {
+            toastr.error(err.message || 'Failed to start session');
+        }
+    });
+});
+
     // ✅ COMPLETE MODAL JAVASCRIPT (no extra DOMContentLoaded)
 const completeModal = document.getElementById('completeAppointmentModal');
 const completeForm  = document.getElementById('completeAppointmentForm');

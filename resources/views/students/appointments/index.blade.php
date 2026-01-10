@@ -106,13 +106,14 @@
     <label for="requested_datetime" class="block text-sm font-medium text-gray-700 mb-1">
         Choose Date & Time
     </label>
-    <input type="datetime-local" 
-       name="requested_datetime" 
-       id="requested_datetime"
-       min="{{ now()->format('Y-m-d\TH:i') }}" {{-- current time, safe --}}
-       step="1800" {{-- 30-minute intervals --}}
-       class="w-full border-gray-300 rounded-lg shadow-sm text-sm px-3 py-2 focus:ring-blue-400 focus:border-blue-400"
-       required>
+    <input 
+    type="datetime-local" 
+    name="requested_datetime" 
+    id="requested_datetime"
+    min="{{ now()->addMinutes(30 - (now()->minute % 30))->setSecond(0)->format('Y-m-d\TH:i') }}"
+    step="1800"
+    class="w-full border-gray-300 rounded-lg shadow-sm text-sm px-3 py-2 focus:ring-blue-400 focus:border-blue-400"
+    required>
 <small class="text-gray-500 block mt-1">
     ⏰ Available time slots: <strong>8:00 AM – 12:00 PM</strong> and <strong>1:30 PM – 4:30 PM</strong>
 </small>
@@ -153,15 +154,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const response = await fetch(form.action, {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
-                    "Accept": "application/json"
-                },
-                body: formData
-            });
+    method: "POST",
+    headers: {
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+        "Accept": "application/json"
+    },
+    body: formData
+});
 
-            const result = await response.json();
+// ✅ FIRST: check HTTP status
+if (!response.ok) {
+    toastr.error("Request failed. Please check your input.", "Error");
+    return;
+}
+
+// ✅ SECOND: safely parse JSON
+let result;
+try {
+    result = await response.json();
+} catch (e) {
+    toastr.error("Server returned an unexpected response.", "Error");
+    return;
+}
+
 
             if (result.success) {
                 toastr.success("Appointment requested successfully!", "Success");

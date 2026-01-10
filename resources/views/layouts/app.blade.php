@@ -298,7 +298,7 @@
             toggle() {
                 this.openNotif = !this.openNotif;
                 if (this.openNotif) {
-                    axios.post('{{ route('notifications.readAll') }}').then(() => {
+                    axios.post("{{ route('notifications.readAll') }}").then(() => {
                         document.getElementById('notifBadge').classList.add('hidden');
                     });
                 }

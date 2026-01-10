@@ -120,41 +120,75 @@
             @if ($todayAppointments->count() > 0)
                 <div class="table-responsive">
                     <table class="table align-middle table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Patient Name</th>
-                                <th>Time</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($todayAppointments as $appointment)
-                                <tr>
-                                    <td class="fw-medium">{{ $appointment->user->name ?? 'Unknown' }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('h:i A') }}</td>
-                                    <td>
-                                        <span class="badge rounded-pill px-3 py-2 
-                                            @if($appointment->status === 'pending') bg-warning text-dark
-                                            @elseif($appointment->status === 'approved') bg-success
-                                            @else bg-secondary
-                                            @endif">
-                                            {{ ucfirst($appointment->status) }}
-                                        </span>
-                                        @if($appointment->status === 'approved')
-    <button
-    class="btn btn-success btn-sm"
-    data-bs-toggle="modal"
-    data-bs-target="#completeAppointmentModal"
-    data-action="{{ route('nurse.appointments.complete', $appointment->id) }}" {{-- ✅ We'll create this route --}}>
-    Complete
-    </button>
+    <thead>
+        <tr>
+            <th>Patient Name</th>
+            <th>Time</th>
+            <th>Status / Action</th>
+        </tr>
+    </thead>
 
-@endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+    <tbody>
+    @foreach ($todayAppointments as $appointment)
+        <tr>
+            <td class="fw-medium">
+                {{ $appointment->user->name ?? 'Unknown' }}
+            </td>
+
+            <td>
+                {{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('h:i A') }}
+            </td>
+
+           <td>
+    <span class="badge rounded-pill px-3 py-2 
+        @if($appointment->status === 'pending') bg-warning text-dark
+        @elseif($appointment->status === 'in_session') bg-primary
+        @elseif($appointment->status === 'completed') bg-success
+        @elseif($appointment->status === 'declined') bg-danger
+        @else bg-secondary
+        @endif">
+        {{ ucfirst(str_replace('_',' ', $appointment->status)) }}
+    </span>
+
+    {{-- ▶ START --}}
+    @if($appointment->status === 'pending')
+        <form method="POST"
+              action="{{ route('nurse.appointments.start', $appointment->id) }}"
+              class="d-inline start-session-form">
+            @csrf
+            <button class="btn btn-primary btn-sm ms-2">
+                ▶ Start
+            </button>
+        </form>
+
+        <form method="POST"
+              action="{{ route('nurse.appointments.decline', $appointment->id) }}"
+              class="d-inline ms-1">
+            @csrf
+            @method('PATCH')
+            <button class="btn btn-outline-danger btn-sm">
+                ❌ Decline
+            </button>
+        </form>
+    @endif
+
+    {{-- ✅ COMPLETE --}}
+    @if($appointment->status === 'in_session')
+        <button
+            class="btn btn-success btn-sm ms-2"
+            data-bs-toggle="modal"
+            data-bs-target="#completeAppointmentModal"
+            data-action="{{ route('nurse.appointments.complete', $appointment->id) }}">
+            Complete
+        </button>
+    @endif
+</td>
+
+        </tr>
+    @endforeach
+    </tbody>
+</table>
+
                 </div>
             @else
                 <div class="text-center py-4 text-muted">No appointments scheduled for today.</div>
@@ -167,7 +201,7 @@
 <div class="card summary-card text-info shadow-sm mb-4 border-0">
     <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-semibold mb-0">🗓️ Upcoming Appointments</h4>
+            <h4 class="fw-semibold mb-0">🗓️ Appointments</h4>
             <span class="badge bg-info text-white px-3 py-2 rounded-pill">
                 Total: {{ $upcomingAppointments->count() }}
             </span>
@@ -205,27 +239,26 @@
                         </div>
 
                         <!-- Manage Button -->
-                        <div class="text-end flex-shrink-0" style="width: 120px;">
-                            @if(!in_array($appointment->status, ['cancelled', 'declined', 'completed', 'rescheduled', 'approved']))
-                                <button
-    class="btn btn-outline-primary btn-sm px-3 shadow-sm"
-    data-bs-toggle="modal"
-    data-bs-target="#manageAppointmentModal"
-    data-action="{{ url('/nurse/appointments/'.$appointment->id) }}"
+                        <<div class="text-end flex-shrink-0" style="width: 140px;">
+    @if($appointment->status === 'completed')
+        <span class="badge bg-success px-3 py-2 rounded-pill">
+            ✔ Completed
+        </span>
+    @elseif($appointment->status === 'declined')
+        <span class="badge bg-danger px-3 py-2 rounded-pill">
+            ✖ Declined
+        </span>
+    @elseif($appointment->status === 'in_session')
+        <span class="badge bg-primary px-3 py-2 rounded-pill">
+            🔵 In Session
+        </span>
+    @else
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+            ⏳ Pending
+        </span>
+    @endif
+</div>
 
-    data-approved_datetime="{{ $appointment->approved_datetime }}"
-    data-status="{{ $appointment->status }}"
-    data-note="{{ $appointment->admin_note }}"
-    data-findings="{{ $appointment->findings }}">
-    Manage
-</button>
-
-
-
-                            @else
-                                <span class="text-muted small fst-italic">No actions</span>
-                            @endif
-                        </div>
 
                     </li>
                 @endforeach
@@ -500,6 +533,31 @@ document.addEventListener('DOMContentLoaded', function () {
             saveBtn.innerHTML = '💾 Save';
         }
     });
+    // START SESSION via AJAX
+document.querySelectorAll('.start-session-form').forEach(form => {
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message);
+
+            toastr.success('Session started');
+            setTimeout(() => location.reload(), 600);
+        } catch (err) {
+            toastr.error(err.message || 'Failed to start session');
+        }
+    });
+});
+
     // ✅ COMPLETE MODAL JAVASCRIPT (no extra DOMContentLoaded)
 const completeModal = document.getElementById('completeAppointmentModal');
 const completeForm  = document.getElementById('completeAppointmentForm');

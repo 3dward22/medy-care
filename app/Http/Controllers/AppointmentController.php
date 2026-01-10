@@ -7,11 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use App\Events\NewNotification;
+use App\Services\GuardianSmsService;
 use App\Models\GuardianSmsLog;
 use Illuminate\Support\Facades\Http;
 use App\Models\AppointmentCompletion;
 use Illuminate\Support\Facades\Gate;
+use App\Notifications\UserNotification;
+use App\Events\NewNotification as BroadcastEvent;
+
 
 class AppointmentController extends Controller
 {
@@ -62,20 +65,30 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'requested_datetime' => [
-                'required',
-                'date',
-                'after:now',
-                function ($attribute, $value, $fail) {
-                    $time = Carbon::parse($value)->format('H:i');
-                    $withinMorning = ($time >= '08:00' && $time <= '12:00');
-                    $withinAfternoon = ($time >= '13:30' && $time <= '16:30');
-                    if (!($withinMorning || $withinAfternoon)) {
-                        $fail('Appointments are only allowed between 8:00 AM–12:00 PM or 1:30 PM–4:30 PM.');
-                    }
-                },
-            ],
-        ]);
+    'requested_datetime' => [
+        'required',
+        'date',
+        'after:now',
+        function ($attribute, $value, $fail) {
+            $dt = Carbon::parse($value);
+
+            // ⏰ Enforce 30-minute intervals
+            if ($dt->minute % 30 !== 0) {
+                $fail('Appointments must be scheduled in 30-minute intervals.');
+            }
+
+            // 🕘 Clinic hours validation
+            $time = $dt->format('H:i');
+            $withinMorning = ($time >= '08:00' && $time <= '12:00');
+            $withinAfternoon = ($time >= '13:30' && $time <= '16:30');
+
+            if (!($withinMorning || $withinAfternoon)) {
+                $fail('Appointments are only allowed between 8:00 AM–12:00 PM or 1:30 PM–4:30 PM.');
+            }
+        },
+    ],
+]);
+
 
         // Daily appointment limit
         $dailyLimit = env('APPOINTMENT_DAILY_LIMIT', 10);
@@ -91,6 +104,21 @@ class AppointmentController extends Controller
             }
             return back()->with('error', 'Sorry, the appointment limit for this day has been reached. Please choose another date.');
         }
+        // 🚫 Prevent double-booking (same time slot)
+$slotTaken = Appointment::where('requested_datetime', $request->requested_datetime)
+    ->whereIn('status', ['pending', 'approved'])
+    ->exists();
+
+if ($slotTaken) {
+    if ($request->expectsJson() || $request->ajax()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This time slot is already taken. Please choose another time.'
+        ], 409);
+    }
+
+    return back()->with('error', 'This time slot is already taken. Please choose another time.');
+}
 
         Appointment::create([
             'student_id' => Auth::id(),
@@ -399,40 +427,107 @@ class AppointmentController extends Controller
     /* ---------------------------------------------------
     | 🧩 Helper: Log and mark Guardian SMS
     --------------------------------------------------- */
-    private function sendGuardianSms($appointment, $student, $message)
-    {
+   private function sendGuardianSms($appointment, $student, $message)
+{
+    try {
+        // 🔍 GET PHONE FROM PATIENT RECORD
+        // If $student is actually a User, load patient info
+        $patient = \App\Models\Patient::where('user_id', $student->id)->first();
+
+        if (!$patient || empty($patient->phone)) {
+            Log::warning('Guardian phone not found for student ID ' . $student->id);
+            return;
+        }
+
+        // 🔧 Normalize phone number to +63 format
+        $phone = $patient->phone;
+
+        if (str_starts_with($phone, '09')) {
+            $phone = '+63' . substr($phone, 1);
+        } elseif (str_starts_with($phone, '639')) {
+            $phone = '+' . $phone;
+        }
+
+        // 🔔 SEND VIA TWILIO WHATSAPP
+        $sms = new GuardianSmsService();
+        $sms->send($phone, $message);
+
+        // 📝 LOG IT
         GuardianSmsLog::create([
-            'appointment_id' => $appointment->id,
-            'student_id' => $student->id,
-            'guardian_name' => $student->guardian_name,
-            'guardian_phone' => $student->guardian_phone,
-            'message' => $message,
-            'sent_by' => Auth::user()->name,
-            'sent_by_id' => Auth::id(),
-            'sent_by_role' => Auth::user()->role,
-            'sent_at' => now(),
+            'appointment_id'  => $appointment->id,
+            'student_id'      => $student->id,
+            'guardian_name'   => $student->name,
+            'guardian_phone'  => $phone,
+            'message'         => $message,
+            'sent_by'         => Auth::user()->name,
+            'sent_by_id'      => Auth::id(),
+            'sent_by_role'    => Auth::user()->role,
+            'sent_at'         => now(),
         ]);
 
+        // ✅ MARK AS SENT
         $appointment->update(['guardian_sms_sent' => true]);
+
+    } catch (\Exception $e) {
+        Log::error('Guardian WhatsApp send failed: ' . $e->getMessage());
     }
+}
+
+public function manualGuardianSend(Request $request)
+{
+    $request->validate([
+        'guardian_name'  => 'required|string|max:255',
+        'guardian_phone' => 'required|string',
+        'message'        => 'required|string|max:500',
+    ]);
+
+    try {
+        // 🔧 Normalize phone
+        $phone = $request->guardian_phone;
+
+        if (str_starts_with($phone, '09')) {
+            $phone = '+63' . substr($phone, 1);
+        } elseif (str_starts_with($phone, '639')) {
+            $phone = '+' . $phone;
+        }
+
+        // 🔔 SEND VIA WHATSAPP
+        $sms = new \App\Services\GuardianSmsService();
+        $sms->send($phone, $request->message);
+
+        // 📝 LOG IT
+        \App\Models\GuardianSmsLog::create([
+            'guardian_name'  => $request->guardian_name,
+            'guardian_phone' => $phone,
+            'message'        => $request->message,
+            'sent_by'        => Auth::user()->name,
+            'sent_by_id'     => Auth::id(),
+            'sent_by_role'   => Auth::user()->role,
+            'sent_at'        => now(),
+        ]);
+
+        return back()->with('success', 'Guardian message sent via WhatsApp successfully.');
+
+    } catch (\Exception $e) {
+        \Log::error('Manual WhatsApp send failed: ' . $e->getMessage());
+        return back()->with('error', 'Failed to send message: ' . $e->getMessage());
+    }
+}
+
 
     /* ---------------------------------------------------
     | 🧠 Helper: Broadcast notification cleanly
     --------------------------------------------------- */
     private function notify($userId, $message)
-    {
-        $user = \App\Models\User::find($userId);
-
+{
+    $user = \App\Models\User::find($userId);
     if (!$user) return;
 
-    // Save to DB
-    $user->notify(new class($message) extends \Illuminate\Notifications\Notification {
-        public function __construct(private string $message) {}
-        public function via($notifiable) { return ['database']; }
-        public function toDatabase($notifiable) { return ['message' => $this->message]; }
-    });
+    // 1️⃣ Save notification to database
+    $user->notify(new UserNotification($message));
 
-    // Broadcast live
-    event(new \App\Events\NewNotification($userId, $message));
-    }
+    // 2️⃣ Broadcast in real-time
+    event(new BroadcastEvent($userId, $message));
+}
+
 }

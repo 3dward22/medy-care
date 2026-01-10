@@ -1,5 +1,6 @@
 <?php 
 
+use App\Services\GuardianSmsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
@@ -12,7 +13,7 @@ use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentControll
 use App\Http\Controllers\OtpController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\GuardianSmsController;
-
+use App\Http\Controllers\Admin\UserVerificationController;
 /*
 |--------------------------------------------------------------------------
 | Guest Routes
@@ -59,48 +60,83 @@ Route::middleware('auth')->group(function () {
         // User management
         Route::get('admin/users', [AdminController::class, 'index'])->name('admin.users.index');
         Route::delete('admin/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
+        
+        // User verification routes
+        Route::get('admin/verify-users', [UserVerificationController::class, 'index'])
+        ->name('admin.users.verify');
+
+    Route::post('admin/verify-users/{user}/approve',
+        [UserVerificationController::class, 'approve'])
+        ->name('admin.users.approve');
+
+    Route::delete('admin/verify-users/{user}/reject',
+        [UserVerificationController::class, 'reject'])
+        ->name('admin.users.reject');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Nurse Routes
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('nurse')->name('nurse.')->middleware('role:nurse')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+   /*
+|--------------------------------------------------------------------------
+| Nurse Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('nurse')
+    ->name('nurse.')
+    ->middleware(['role:nurse', 'verified.user'])
+    ->group(function () {
 
-        Route::get('/students', [AdminController::class, 'studentRecords'])->name('students.index');
-        Route::post('/appointments/emergency', [AppointmentController::class, 'storeEmergency'])
-    ->name('appointments.emergency');
-        // Nurse appointments
-        Route::get('appointments', [AppointmentController::class, 'indexForNurse'])->name('appointments.index');
-        Route::post('appointments', [AppointmentController::class, 'store'])->name('appointments.store');
-        Route::put('appointments/{appointment}', [AppointmentController::class, 'update'])->name('appointments.update');
-        Route::get('appointments/today-json', [AppointmentController::class, 'todayAppointmentsJson'])
-            ->name('appointments.today-json');
-        //compeltion route    
-        Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
-            ->name('appointments.complete');
-        // Notifications page
-        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
-        // Emergency Records
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+    // 🩺 Appointment session flow
+    Route::post('/appointments/{appointment}/start',
+        [\App\Http\Controllers\Nurse\AppointmentSessionController::class, 'start'])
+        ->name('appointments.start');
+
+    Route::post('/appointments/{appointment}/complete',
+        [\App\Http\Controllers\Nurse\AppointmentSessionController::class, 'complete'])
+        ->name('appointments.complete');
+
+    Route::patch('/appointments/{appointment}/decline',
+        [\App\Http\Controllers\Nurse\AppointmentSessionController::class, 'decline'])
+        ->name('appointments.decline');
+
+    // 📋 Nurse appointment management
+    Route::get('appointments', [AppointmentController::class, 'indexForNurse'])
+        ->name('appointments.index');
+
+    Route::put('appointments/{appointment}', [AppointmentController::class, 'update'])
+        ->name('appointments.update');
+
+    Route::post('/appointments/emergency',
+        [AppointmentController::class, 'storeEmergency'])
+        ->name('appointments.emergency');
+
+    // 👩‍🎓 Student records
+    Route::get('/students', [AdminController::class, 'studentRecords'])
+        ->name('students.index');
+
+    // 🔔 Notifications
+    Route::get('notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    // 🚨 Emergency records
     Route::prefix('emergency')->name('emergency.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\EmergencyRecordController::class, 'index'])->name('index');
-    Route::get('/create', [\App\Http\Controllers\EmergencyRecordController::class, 'create'])->name('create');
-    Route::post('/', [\App\Http\Controllers\EmergencyRecordController::class, 'store'])->name('store');
-    Route::get('/{emergency}', [\App\Http\Controllers\EmergencyRecordController::class, 'show'])->name('show');
-});
-
-    
-    
+        Route::get('/', [\App\Http\Controllers\EmergencyRecordController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\EmergencyRecordController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\EmergencyRecordController::class, 'store'])->name('store');
+        Route::get('/{emergency}', [\App\Http\Controllers\EmergencyRecordController::class, 'show'])->name('show');
     });
+});
 
     /*
     |--------------------------------------------------------------------------
     | Student Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('student')->middleware('role:student')->group(function () {
+    Route::prefix('student')
+    ->middleware(['role:student', 'verified.user'])
+    ->group(function () {
+
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');
 
         Route::resource('appointments', AppointmentController::class)
@@ -181,4 +217,24 @@ Route::get('/', function () {
         };
     }
     return redirect()->route('login');
+});
+
+
+Route::post('/guardian/manual-send', 
+    [AppointmentController::class, 'manualGuardianSend']
+)->name('appointments.notifyGuardian.manual');
+
+Route::get('/verification-pending', function () {
+    return view('auth.verification-pending');
+})->name('verification.pending');
+
+Route::get('/test-sms', function () {
+    $sms = new GuardianSmsService();
+
+    $sms->send(
+        '+639952936784',   // PUT YOUR VERIFIED PHONE NUMBER HERE
+        'Test SMS from MedCare using Twilio 🎉'
+    );
+
+    return 'SMS sent! Check your phone.';
 });

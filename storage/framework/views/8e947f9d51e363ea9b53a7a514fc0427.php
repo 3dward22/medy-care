@@ -7,7 +7,8 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <form action="<?php echo e(route('guardian.sms.send')); ?>" method="POST" class="needs-validation" novalidate>
+      <form action="<?php echo e(route('appointments.notifyGuardian.manual')); ?>" method="POST" class="needs-validation" novalidate>
+
         <?php echo csrf_field(); ?>
         <div class="modal-body px-4 py-3">
           <p class="text-muted small mb-3">

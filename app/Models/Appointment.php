@@ -7,8 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
+    
+
+      const STATUS_PENDING   = 'pending';
+    const STATUS_APPROVED  = 'approved';
+    const STATUS_SESSION   = 'in_session';
+    const STATUS_COMPLETED = 'completed';
+
+
     use HasFactory;
 
+  
+
+        
     protected $fillable = [
         'student_id',
         'user_id',
