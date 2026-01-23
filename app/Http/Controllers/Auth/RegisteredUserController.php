@@ -7,89 +7,70 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\Auth\Events\Registered;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Show the registration form.
-     */
     public function create()
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     */
     public function store(Request $request)
     {
+        // ✅ Base validation
         $request->validate([
-            'name'           => ['required', 'string', 'max:255'],
-            'email'          => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
-            'password'       => ['required', 'confirmed', Password::defaults()],
-            'role'           => ['required', 'in:admin,nurse,student'],
-            'student_phone'  => ['nullable', 'string', 'max:20'],
-            'guardian_name'  => ['nullable', 'string', 'max:255'],
-            'guardian_phone' => ['nullable', 'string', 'max:20'],
-            'admin_code'     => ['nullable', 'string'],
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|confirmed|min:8',
+            'role' => 'required|in:admin,nurse,student',
+            'access_code' => 'nullable|string',
         ]);
 
-        $role = strtolower($request->role);
-/*
-        // 🔒 Admin role validation
-        if ($role === 'admin') {
-            $adminSecret = env('ADMIN_SECRET');
-            if (empty($adminSecret) || $request->admin_code !== $adminSecret) {
+        // 🔐 ADMIN
+        if ($request->role === 'admin') {
+            if ($request->access_code !== config('app.admin_secret')) {
                 return back()
-                    ->withErrors(['admin_code' => 'Invalid admin access code.'])
-                    ->withInput()
-                    ->with('show_admin_modal', true); // ✅ Keeps modal open
+                    ->withErrors(['access_code' => 'Invalid admin access code'])
+                    ->withInput();
             }
         }
-*/
-        // 🎓 Student guardian validation
-        if ($role === 'student') {
+
+        // 🩺 NURSE
+        if ($request->role === 'nurse') {
+            if ($request->access_code !== config('app.nurse_secret')) {
+                return back()
+                    ->withErrors(['access_code' => 'Invalid nurse access code'])
+                    ->withInput();
+            }
+        }
+
+        // 🎓 STUDENT
+        if ($request->role === 'student') {
             $request->validate([
-                'student_phone'  => ['required', 'string', 'max:20'],
-                'guardian_name'  => ['required', 'string', 'max:255'],
-                'guardian_phone' => ['required', 'string', 'max:20'],
+                'student_phone' => 'required',
+                'guardian_name' => 'required',
+                'guardian_phone' => 'required',
             ]);
         }
 
-        // 🧍 Create user
+        // ✅ Create user
         $user = User::create([
-            'name'           => $request->name,
-            'email'          => $request->email,
-            'password'       => Hash::make($request->password),
-            'role'           => $role,
-            'student_phone'  => $request->student_phone,
-            'guardian_name'  => $request->guardian_name,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'student_phone' => $request->student_phone,
+            'guardian_name' => $request->guardian_name,
             'guardian_phone' => $request->guardian_phone,
         ]);
 
-        event(new Registered($user));
         Auth::login($user);
 
-        // 🧭 Role-based redirect
-        switch ($user->role) {
-            case 'admin':
-                session()->flash('success', 'Welcome Admin! You have registered successfully.');
-                return redirect()->intended(route('dashboard'));
-
-            case 'nurse':
-                session()->flash('success', 'Welcome Nurse! You have registered successfully.');
-                return redirect()->intended(route('nurse.dashboard'));
-
-            case 'student':
-                session()->flash('success', 'Welcome Student! You have registered successfully.');
-                return redirect()->intended(route('student.dashboard'));
-
-            default:
-                Auth::logout();
-                session()->flash('error', 'Role not recognized, please contact support.');
-                return redirect()->route('login');
-        }
+        // ✅ Redirect
+        return match ($user->role) {
+            'admin' => redirect()->route('dashboard'),
+            'nurse' => redirect()->route('nurse.dashboard'),
+            'student' => redirect()->route('student.dashboard'),
+        };
     }
 }

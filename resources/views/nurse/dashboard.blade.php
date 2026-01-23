@@ -136,12 +136,17 @@
             </td>
 
             <td>
-                {{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('h:i A') }}
-            </td>
+    {{ $appointment->approved_datetime
+        ? \Carbon\Carbon::parse($appointment->approved_datetime)->format('h:i A')
+        : '—' }}
+</td>
+
 
            <td>
+    {{-- Status badge --}}
     <span class="badge rounded-pill px-3 py-2 
         @if($appointment->status === 'pending') bg-warning text-dark
+        @elseif($appointment->status === 'approved') bg-success
         @elseif($appointment->status === 'in_session') bg-primary
         @elseif($appointment->status === 'completed') bg-success
         @elseif($appointment->status === 'declined') bg-danger
@@ -150,24 +155,26 @@
         {{ ucfirst(str_replace('_',' ', $appointment->status)) }}
     </span>
 
-    {{-- ▶ START --}}
+    {{-- ✅ REVIEW (only for pending) --}}
     @if($appointment->status === 'pending')
+        <button
+            class="btn btn-success btn-sm ms-2"
+            data-bs-toggle="modal"
+            data-bs-target="#manageAppointmentModal"
+            data-action="{{ route('nurse.appointments.update', $appointment->id) }}"
+            data-status="pending">
+            ✅ Review
+        </button>
+    @endif
+
+    {{-- ▶ START SESSION --}}
+    @if($appointment->status === 'approved')
         <form method="POST"
               action="{{ route('nurse.appointments.start', $appointment->id) }}"
               class="d-inline start-session-form">
             @csrf
             <button class="btn btn-primary btn-sm ms-2">
                 ▶ Start
-            </button>
-        </form>
-
-        <form method="POST"
-              action="{{ route('nurse.appointments.decline', $appointment->id) }}"
-              class="d-inline ms-1">
-            @csrf
-            @method('PATCH')
-            <button class="btn btn-outline-danger btn-sm">
-                ❌ Decline
             </button>
         </form>
     @endif
@@ -184,6 +191,7 @@
     @endif
 </td>
 
+
         </tr>
     @endforeach
     </tbody>
@@ -197,82 +205,72 @@
     </div>
 </div>
 
-{{-- 🗓️ Upcoming Appointments — List View with Centered Status --}}
-<div class="card summary-card text-info shadow-sm mb-4 border-0">
+{{-- 🟡 Appointment Requests --}}
+<div class="card summary-card text-warning shadow-sm mb-4 border-0">
     <div class="card-body p-4">
+
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-semibold mb-0">🗓️ Appointments</h4>
-            <span class="badge bg-info text-white px-3 py-2 rounded-pill">
-                Total: {{ $upcomingAppointments->count() }}
+            <h4 class="fw-semibold mb-0">🟡 Appointment Requests</h4>
+
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                Total: {{ $pendingAppointments->count() }}
             </span>
         </div>
 
-        @if ($upcomingAppointments->count() > 0)
+        @if ($pendingAppointments->count() > 0)
             <ul class="list-group list-group-flush">
-                @foreach ($upcomingAppointments->sortByDesc('requested_datetime')->take(5) as $appointment)
+
+                @foreach ($pendingAppointments->take(5) as $appointment)
                     <li class="list-group-item d-flex justify-content-between align-items-center py-3 border-0 border-bottom">
-                        
-                        <!-- Patient Info -->
-                        <div class="d-flex align-items-center gap-3 flex-grow-1">
-                            <div class="bg-info bg-opacity-10 p-3 rounded-circle">
-                                🧍
+
+                        {{-- Student --}}
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                                🧑‍🎓
                             </div>
+
                             <div>
-                                <h6 class="fw-semibold mb-1">{{ $appointment->user->name ?? 'Unknown' }}</h6>
+                                <h6 class="fw-semibold mb-1">
+                                    {{ $appointment->user->name ?? 'Unknown' }}
+                                </h6>
+
                                 <p class="text-muted mb-0" style="font-size: 0.9rem;">
+                                    Requested:
                                     {{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('M d, Y h:i A') }}
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Centered Status -->
-                        <div class="text-center flex-shrink-0" style="width: 140px;">
-                            <span class="badge rounded-pill px-3 py-2
-                                @if($appointment->status === 'pending') bg-warning text-dark
-                                @elseif($appointment->status === 'approved') bg-success
-                                @elseif($appointment->status === 'rescheduled') bg-info
-                                @elseif($appointment->status === 'declined') bg-danger
-                                @else bg-secondary
-                                @endif">
-                                {{ ucfirst($appointment->status) }}
-                            </span>
+                        {{-- Review --}}
+                        <div>
+                            <button
+                                class="btn btn-warning btn-sm btn-pill"
+                                data-bs-toggle="modal"
+                                data-bs-target="#manageAppointmentModal"
+                                data-action="{{ route('nurse.appointments.update', $appointment->id) }}"
+                                data-status="pending">
+                                Review
+                            </button>
                         </div>
-
-                        <!-- Manage Button -->
-                        <<div class="text-end flex-shrink-0" style="width: 140px;">
-    @if($appointment->status === 'completed')
-        <span class="badge bg-success px-3 py-2 rounded-pill">
-            ✔ Completed
-        </span>
-    @elseif($appointment->status === 'declined')
-        <span class="badge bg-danger px-3 py-2 rounded-pill">
-            ✖ Declined
-        </span>
-    @elseif($appointment->status === 'in_session')
-        <span class="badge bg-primary px-3 py-2 rounded-pill">
-            🔵 In Session
-        </span>
-    @else
-        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-            ⏳ Pending
-        </span>
-    @endif
-</div>
-
 
                     </li>
                 @endforeach
+
             </ul>
 
-            {{-- View All Button --}}
             <div class="text-end mt-3">
-                <a href="{{ route('nurse.appointments.index') }}" class="btn btn-outline-info btn-pill px-4">
-                    View All Appointments →
+                <a href="{{ route('nurse.appointments.index') }}"
+                   class="btn btn-outline-warning btn-pill px-4">
+                    View All Requests →
                 </a>
             </div>
+
         @else
-            <div class="text-center py-4 text-muted">No upcoming appointments.</div>
+            <div class="text-center py-4 text-muted">
+                No new appointment requests.
+            </div>
         @endif
+
     </div>
 </div>
 
@@ -325,29 +323,14 @@
                       class="form-select rounded-lg shadow-sm"
                       required>
                 <option value="approved">Approve</option>
-                <option value="rescheduled">Reschedule</option>
+                
                 <option value="declined">Decline</option>
                 
               </select>
             </div>
           </div>
 
-          <!-- Nurse Note -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Diagnosis / Complaint</label>
-            <textarea name="admin_note" id="admin_note"
-                      class="form-control rounded-lg shadow-sm"
-                      rows="2" placeholder="Reason for visit or initial diagnosis..."></textarea>
-          </div>
-
-          <!-- Findings -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">🩺 Findings & Treatment</label>
-            <textarea name="findings" id="findings"
-                      class="form-control rounded-lg shadow-sm"
-                      rows="3"
-                      placeholder="e.g. Mild fever, advised hydration, meds given..."></textarea>
-          </div>
+          
         </div>
 
         <!-- Footer -->
@@ -472,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function () {
                      : new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16);
 
         // ✅ Status: only allow the options your validator accepts
-        const allowed = ['approved','rescheduled','declined','completed'];
+        const allowed = ['approved','rescheduled','declined'];
         const current = button.getAttribute('data-status');
         document.getElementById('status').value = allowed.includes(current) ? current : 'approved';
 

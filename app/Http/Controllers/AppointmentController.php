@@ -42,7 +42,7 @@ class AppointmentController extends Controller
     {
         $appointments = Appointment::where('student_id', Auth::id())
             ->orderBy('requested_datetime', 'desc')
-            ->get();
+            ->paginate(10);
 
         return view('students.appointments.index', compact('appointments'));
     }
@@ -63,87 +63,36 @@ class AppointmentController extends Controller
     | 📅 Student: Request new appointment
     --------------------------------------------------- */
     public function store(Request $request)
-    {
-        $request->validate([
-    'requested_datetime' => [
-        'required',
-        'date',
-        'after:now',
-        function ($attribute, $value, $fail) {
-            $dt = Carbon::parse($value);
+{
+    $request->validate([
+        'reason' => 'required|string|max:500',
+        'preferred_time' => 'nullable|string|max:100',
+    ]);
 
-            // ⏰ Enforce 30-minute intervals
-            if ($dt->minute % 30 !== 0) {
-                $fail('Appointments must be scheduled in 30-minute intervals.');
-            }
+    $appointment = Appointment::create([
+        'student_id' => Auth::id(),
+        'user_id' => Auth::id(),
+        'requested_datetime' => now(), // 🔥 request time only
+        'reason' => $request->reason,
+        'preferred_time' => $request->preferred_time,
+        'status' => 'pending',
+    ]);
 
-            // 🕘 Clinic hours validation
-            $time = $dt->format('H:i');
-            $withinMorning = ($time >= '08:00' && $time <= '12:00');
-            $withinAfternoon = ($time >= '13:30' && $time <= '16:30');
+    // 🔔 Notify all nurses
+    $nurses = \App\Models\User::where('role', 'nurse')->get();
 
-            if (!($withinMorning || $withinAfternoon)) {
-                $fail('Appointments are only allowed between 8:00 AM–12:00 PM or 1:30 PM–4:30 PM.');
-            }
-        },
-    ],
-]);
-
-
-        // Daily appointment limit
-        $dailyLimit = env('APPOINTMENT_DAILY_LIMIT', 10);
-        $appointmentsCount = Appointment::whereDate('requested_datetime', Carbon::parse($request->requested_datetime))
-            ->count();
-
-        if ($appointmentsCount >= $dailyLimit) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Sorry, the appointment limit for this day has been reached. Please choose another date.'
-                ], 400);
-            }
-            return back()->with('error', 'Sorry, the appointment limit for this day has been reached. Please choose another date.');
-        }
-        // 🚫 Prevent double-booking (same time slot)
-$slotTaken = Appointment::where('requested_datetime', $request->requested_datetime)
-    ->whereIn('status', ['pending', 'approved'])
-    ->exists();
-
-if ($slotTaken) {
-    if ($request->expectsJson() || $request->ajax()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This time slot is already taken. Please choose another time.'
-        ], 409);
+    foreach ($nurses as $nurse) {
+        $this->notify(
+            $nurse->id,
+            '📅 New appointment request from ' . Auth::user()->name
+        );
     }
 
-    return back()->with('error', 'This time slot is already taken. Please choose another time.');
+    return response()->json([
+        'success' => true,
+        'appointment' => $appointment
+    ]);
 }
-
-        Appointment::create([
-            'student_id' => Auth::id(),
-            'user_id' => Auth::id(),
-            'requested_datetime' => $request->requested_datetime,
-            'status' => 'pending',
-        ]);
-
-        // 🔔 Notify all nurses
-        $nurses = \App\Models\User::where('role', 'nurse')->get();
-        if ($nurses->isEmpty()) {
-            Log::warning('No nurse account found to receive new appointment notifications.');
-        } else {
-            foreach ($nurses as $nurse) {
-                $this->notify($nurse->id, '📅 New appointment request from ' . Auth::user()->name);
-            }
-        }
-
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json(['success' => true]);
-        }
-
-        return redirect()->route('student.appointments.index')
-            ->with('success', 'Appointment request submitted successfully.');
-    }
 
     /* ---------------------------------------------------
     | 🧭 Nurse/Admin: Manage appointments (approve, decline, etc.)
@@ -157,18 +106,19 @@ if ($slotTaken) {
 
             $request->validate([
                 'approved_datetime' => 'nullable|date|after:now',
-                'status' => 'required|in:approved,rescheduled,declined',
+                'status' => 'required|in:approved,declined,in_session',
                 'admin_note' => 'nullable|string|max:500',
                 'findings' => 'nullable|string|max:1000',
             ]);
 
             $appointment->update([
-                'approved_datetime' => $request->approved_datetime,
-                'status' => $request->status,
-                'approved_by' => Auth::id(),
-                'admin_note' => $request->admin_note,
-                'findings' => $request->findings,
-            ]);
+    'approved_datetime' => $request->approved_datetime ?? now(),
+    'status' => $request->status,
+    'approved_by' => Auth::id(),
+    'admin_note' => $request->admin_note,
+    'findings' => $request->findings,
+]);
+
 
             $student = $appointment->student;
 
@@ -183,16 +133,19 @@ if ($slotTaken) {
             }
 
             // 🧠 Notify student
-            $studentMessage = match ($request->status) {
-                'approved' => "Your appointment has been approved for " .
-                    ($appointment->approved_datetime
-                        ? Carbon::parse($appointment->approved_datetime)->format('M d, Y h:i A')
-                        : 'the scheduled date') . ".",
-                'declined' => "Your appointment request was declined by the nurse.",
-                'rescheduled' => "Your appointment has been rescheduled. Please check your dashboard for details.",
-                'completed' => "Your check-up has been completed. Thank you for visiting the clinic.",
-                default => "Your appointment status was updated.",
-            };
+           $studentMessage = match ($request->status) {
+    'approved' => "Your appointment has been approved for " .
+        ($appointment->approved_datetime
+            ? Carbon::parse($appointment->approved_datetime)->format('M d, Y h:i A')
+            : 'the scheduled date') . ".",
+
+    'declined' => "Your appointment request was declined by the nurse.",
+
+    'in_session' => "Your appointment is now in session. Please proceed to the clinic.",
+
+    default => "Your appointment status was updated.",
+};
+
 
             $this->notify($student->id, "📢 {$studentMessage}");
             $appointment->update(['student_sms_sent' => true]);
@@ -200,13 +153,19 @@ if ($slotTaken) {
             // 👨‍👩‍👧 Notify guardian via SMS
             if (!empty($student->guardian_phone)) {
                 $guardianMessage = match ($request->status) {
-                    'approved' => "Good day! This is MedCare. {$student->name}'s appointment has been approved.",
-                    'declined' => "Hello! {$student->name}'s appointment request was declined by the nurse.",
-                    'rescheduled' => "Heads up! {$student->name}'s appointment has been rescheduled.",
-                    'completed' => "MedCare update: {$student->name}'s check-up is completed. Findings: " .
-                        ($request->findings ?? 'No findings recorded.'),
-                    default => "Update: {$student->name}'s appointment status changed.",
-                };
+    'approved' =>
+        "Good day! This is MedCare. {$student->name}'s appointment has been approved.",
+
+    'declined' =>
+        "Hello! This is MedCare. {$student->name}'s appointment request was declined.",
+
+    'in_session' =>
+        "MedCare update: {$student->name} is currently being attended at the clinic.",
+
+    default =>
+        "MedCare update: {$student->name}'s appointment status has changed.",
+};
+
 
                 $this->sendGuardianSms($appointment, $student, $guardianMessage);
             }
@@ -366,12 +325,13 @@ if ($slotTaken) {
     {
         $allAppointments = Appointment::orderBy('requested_datetime', 'desc')->get();
         $today = Carbon::today();
-        $todayAppointments = Appointment::whereDate('requested_datetime', $today)
+        $todayAppointments = Appointment::whereDate('approved_datetime', $today)
+->whereIn('status', ['approved', 'in_session'])
             ->orderBy('requested_datetime', 'desc')->get();
 
         $startOfWeek = Carbon::now()->startOfWeek();
         $endOfWeek = Carbon::now()->endOfWeek();
-        $weekAppointments = Appointment::whereBetween('requested_datetime', [$startOfWeek, $endOfWeek])
+        $weekAppointments = Appointment::whereBetween('approved_datetime', [$startOfWeek, $endOfWeek])
             ->orderBy('requested_datetime', 'desc')->get();
 
         return view('admin.appointments.all', [
@@ -388,10 +348,11 @@ if ($slotTaken) {
     {
         $today = Carbon::today();
 
-        $todayAppointments = Appointment::with('user')
-            ->whereDate('requested_datetime', $today)
-            ->orderBy('requested_datetime', 'desc')
-            ->get();
+$todayAppointments = Appointment::with('user')
+    ->whereDate('approved_datetime', $today)
+    ->whereIn('status', ['approved', 'in_session'])
+    ->orderBy('requested_datetime', 'desc')
+    ->get();
 
         return response()->json([
             'count' => $todayAppointments->count(),
@@ -473,6 +434,7 @@ if ($slotTaken) {
     }
 }
 
+
 public function manualGuardianSend(Request $request)
 {
     $request->validate([
@@ -515,10 +477,10 @@ public function manualGuardianSend(Request $request)
 }
 
 
-    /* ---------------------------------------------------
-    | 🧠 Helper: Broadcast notification cleanly
-    --------------------------------------------------- */
-    private function notify($userId, $message)
+/* ---------------------------------------------------
+| 🧠 Helper: Broadcast notification cleanly
+--------------------------------------------------- */
+private function notify($userId, $message)
 {
     $user = \App\Models\User::find($userId);
     if (!$user) return;
@@ -528,6 +490,68 @@ public function manualGuardianSend(Request $request)
 
     // 2️⃣ Broadcast in real-time
     event(new BroadcastEvent($userId, $message));
+}
+
+public function nurseDashboard()
+{
+    // ⏳ Pending (no date yet)
+    $pendingAppointments = Appointment::with('user')
+    ->where('status', 'pending')
+    ->orderBy('requested_datetime')
+    ->paginate(10);
+
+
+    // 📋 TODAY — auto moves here when date == today
+    $todayAppointments = Appointment::with('user')
+    ->whereDate('approved_datetime', Carbon::today())
+    ->whereIn('status', ['approved', 'in_session'])
+    ->paginate(10);
+
+    // 🗓️ UPCOMING — auto moves out when date becomes today
+    
+$upcomingAppointments = Appointment::with('user')
+    ->whereDate('approved_datetime', '>', Carbon::today())
+    ->where('status', 'approved')
+    ->paginate(10);
+
+    // 👩‍🎓 Needed for emergency & SMS modal
+    $students = \App\Models\User::where('role', 'student')
+        ->orderBy('name')
+        ->get();
+
+    return view('nurse.dashboard', compact(
+        'pendingAppointments',
+        'todayAppointments',
+        'upcomingAppointments',
+        'students'
+    ));
+}
+
+public function startSession(Appointment $appointment)
+{
+    if (!in_array(Auth::user()->role, ['nurse', 'admin'])) {
+        abort(403);
+    }
+
+    if ($appointment->status !== 'approved') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Only approved appointments can be started.'
+        ], 422);
+    }
+
+    $appointment->update([
+        'status' => 'in_session'
+    ]);
+
+    $this->notify(
+        $appointment->student_id,
+        '🩺 Your appointment session has started.'
+    );
+
+    return response()->json([
+        'success' => true
+    ]);
 }
 
 }

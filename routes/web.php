@@ -81,24 +81,27 @@ Route::middleware('auth')->group(function () {
 */
 Route::prefix('nurse')
     ->name('nurse.')
-    ->middleware(['role:nurse', 'verified.user'])
+    ->middleware(['role:nurse'])
     ->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+    Route::get('/dashboard', [AppointmentController::class, 'nurseDashboard'])
+    ->name('dashboard');
+
 
     // 🩺 Appointment session flow
     Route::post('/appointments/{appointment}/start',
-        [\App\Http\Controllers\Nurse\AppointmentSessionController::class, 'start'])
-        ->name('appointments.start');
+    [AppointmentController::class, 'startSession'])
+    ->name('appointments.start');
 
     Route::post('/appointments/{appointment}/complete',
-        [\App\Http\Controllers\Nurse\AppointmentSessionController::class, 'complete'])
-        ->name('appointments.complete');
+    [AppointmentController::class, 'complete'])
+    ->name('appointments.complete');
+
 
     Route::patch('/appointments/{appointment}/decline',
-        [\App\Http\Controllers\Nurse\AppointmentSessionController::class, 'decline'])
-        ->name('appointments.decline');
+    [AppointmentController::class, 'decline'])
+    ->name('appointments.decline');
+
 
     // 📋 Nurse appointment management
     Route::get('appointments', [AppointmentController::class, 'indexForNurse'])
@@ -134,7 +137,7 @@ Route::prefix('nurse')
     |--------------------------------------------------------------------------
     */
     Route::prefix('student')
-    ->middleware(['role:student', 'verified.user'])
+    ->middleware(['role:student'])
     ->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');

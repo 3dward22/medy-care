@@ -81,7 +81,7 @@
 </td>
 
                             <td class="px-4 py-3 text-center">
-    @if(!in_array($appointment->status, ['cancelled', 'declined', 'completed', 'rescheduled', 'approved']))
+    @if(in_array($appointment->status, ['pending', 'approved', 'in_session']))
         <button class="btn btn-sm btn-primary shadow-sm"
             data-bs-toggle="modal"
             data-bs-target="#manageAppointmentModal"
@@ -142,13 +142,11 @@
             <div class="mb-3">
               <label class="form-label fw-semibold">Status</label>
               <select name="status" id="status"
-                      class="form-select focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-lg shadow-sm"
-                      required>
-                <option value="approved">Approve</option>
-                <option value="rescheduled">Reschedule</option>
-                <option value="declined">Decline</option>
-                <option value="completed">Completed</option>
-              </select>
+    class="form-select rounded-lg shadow-sm"
+    required>
+</select>
+
+
             </div>
           </div>
 
@@ -229,52 +227,81 @@ document.addEventListener('DOMContentLoaded', function () {
             ? approvedDatetime.replace(' ', 'T')
             : new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16);
 
-        document.getElementById('status').value = status ?? 'approved';
+        const statusSelect = document.getElementById('status');
+statusSelect.innerHTML = '';
+
+if (status === 'pending') {
+    statusSelect.innerHTML = `
+        <option value="approved">Approve</option>
+        <option value="declined">Decline</option>
+    `;
+}
+
+else if (status === 'approved') {
+    statusSelect.innerHTML = `
+        <option value="in_session">Start Session</option>
+    `;
+}
+
+else if (status === 'in_session') {
+    statusSelect.innerHTML = `
+        <option value="completed">Complete</option>
+    `;
+}
+
         document.getElementById('admin_note').value = note ?? '';
         document.getElementById('findings').value = findings ?? '';
     });
 
     // ✅ AJAX submission with clearer error handling
     form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '⏳ Saving...';
+    e.preventDefault();
 
-        try {
-            const url = form.action;
-            const formData = new FormData(form);
+    const formData = new FormData(form);
+    const selectedStatus = formData.get('status');
 
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-HTTP-Method-Override': 'PUT',
-                    'Accept': 'application/json' // ✅ Force Laravel to respond in JSON
-                },
-                body: formData
-            });
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '⏳ Saving...';
 
-            const data = await res.json().catch(() => null);
+    if (selectedStatus === 'approved' && !formData.get('approved_datetime')) {
+        toastr.error('Please set appointment date & time before approving.');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Save';
+        return;
+    }
 
-            if (!res.ok || !data?.success) {
-                throw new Error(data?.message || 'Something went wrong while updating the appointment.');
-            }
+    try {
+        const url = form.action;
 
-            toastr.success('✅ Appointment updated successfully!');
-            const modal = bootstrap.Modal.getInstance(manageModal);
-            modal.hide();
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-HTTP-Method-Override': 'PUT',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
 
-            // Refresh after modal closes
-            setTimeout(() => window.location.reload(), 1000);
+        const data = await res.json().catch(() => null);
 
-        } catch (err) {
-            console.error('⚠️ Error:', err);
-            toastr.error(err.message || 'An unexpected error occurred.', 'Error');
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '💾 Save';
+        if (!res.ok || !data?.success) {
+            throw new Error(data?.message || 'Something went wrong while updating the appointment.');
         }
-    });
+
+        toastr.success('✅ Appointment updated successfully!');
+        bootstrap.Modal.getInstance(manageModal).hide();
+
+        setTimeout(() => window.location.reload(), 1000);
+
+    } catch (err) {
+        toastr.error(err.message || 'An unexpected error occurred.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Save';
+    }
+});
+
 
     // 🔔 Toastr configuration
     toastr.options = {

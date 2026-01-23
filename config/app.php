@@ -123,6 +123,10 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+
+    'admin_secret' => env('ADMIN_SECRET'),
+'nurse_secret' => env('NURSE_SECRET'),
+
       /*
     |--------------------------------------------------------------------------
     | Autoloaded Service Providers
