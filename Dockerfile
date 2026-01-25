@@ -1,6 +1,6 @@
-FROM php:8.2-apache
+FROM php:8.2-cli
 
-# Install dependencies
+# Install system deps
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -12,37 +12,20 @@ RUN apt-get update && apt-get install -y \
     curl
 
 # PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd
+RUN docker-php-ext-install pdo pdo_mysql mbstring zip bcmath gd
 
-# Enable Apache rewrite
-RUN a2enmod rewrite
+# Set working dir
+WORKDIR /app
 
-# Set Apache document root to /public
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/conf-available/*.conf
-
-# Working directory
-WORKDIR /var/www/html
-
-# Copy project
+# Copy files
 COPY . .
 
-# Install Composer
+# Install composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install Laravel deps
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+EXPOSE 8080
 
-EXPOSE 80
-
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-ENTRYPOINT ["/start.sh"]
-
+CMD php -S 0.0.0.0:$PORT -t public
