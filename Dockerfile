@@ -1,27 +1,39 @@
-FROM php:8.2-cli
+FROM php:8.2-apache
 
-# System deps
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libpng-dev libonig-dev libxml2-dev libzip-dev nodejs npm \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    git \
+    unzip \
+    libzip-dev \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    curl
+
+# Enable PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl bcmath gd
+
+# Enable Apache rewrite
+RUN a2enmod rewrite
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy project
+COPY . .
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
-
-# Copy app
-COPY . .
-
-# Install PHP deps
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Install JS deps + build assets
-RUN npm install
-RUN npm run build
+# Set permissions
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Permissions
-RUN chmod -R 777 storage bootstrap/cache
+# Expose port
+EXPOSE 80
 
-EXPOSE 8000
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Start Apache
+CMD ["apache2-foreground"]
