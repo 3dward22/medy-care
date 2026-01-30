@@ -213,7 +213,7 @@
             <h4 class="fw-semibold mb-0">🟡 Appointment Requests</h4>
 
             <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                Total: {{ $pendingAppointments->count() }}
+                Total: {{ $pendingAppointmentsCount }}
             </span>
         </div>
 

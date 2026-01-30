@@ -23,8 +23,13 @@
                     <td>{{ $student->email }}</td>
                     <td>{{ $student->created_at->format('Y-m-d') }}</td>
                     <td>
-                        <a href="#" class="btn btn-sm btn-info">View Appointments</a>
-                    </td>
+    <a href="{{ route('nurse.students.records', $student->id) }}"
+       class="btn btn-sm btn-primary">
+        View Records
+    </a>
+</td>
+
+
                 </tr>
                 @endforeach
             </tbody>

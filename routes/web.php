@@ -14,6 +14,8 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\GuardianSmsController;
 use App\Http\Controllers\Admin\UserVerificationController;
+use App\Http\Controllers\StudentRecordController;
+
 /*
 |--------------------------------------------------------------------------
 | Guest Routes
@@ -114,9 +116,17 @@ Route::prefix('nurse')
         [AppointmentController::class, 'storeEmergency'])
         ->name('appointments.emergency');
 
-    // 👩‍🎓 Student records
-    Route::get('/students', [AdminController::class, 'studentRecords'])
-        ->name('students.index');
+    
+    // 👩‍🎓 Student medical records
+Route::get('/students',
+    [StudentRecordController::class, 'index']
+)->name('students.index');
+
+Route::get('/students/{student}/records',
+    [StudentRecordController::class, 'show']
+)->name('students.records');
+
+
 
     // 🔔 Notifications
     Route::get('notifications', [NotificationController::class, 'index'])

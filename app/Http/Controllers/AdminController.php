@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\Appointment;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Controllers\StudentRecordController;
 class AdminController extends Controller
 {
     // Show all users (only admin can access via routes)
@@ -25,6 +26,20 @@ class AdminController extends Controller
     $students = User::where('role', 'student')->get();
 
     return view('nurse.students.index', compact('students'));
+}
+// Show selected student's medical records
+public function showStudentRecords($student)
+{
+    $student = User::where('id', $student)
+        ->where('role', 'student')
+        ->firstOrFail();
+
+    $records = Appointment::where('student_id', $student->id)
+        ->where('status', 'completed')
+        ->latest()
+        ->get();
+
+    return view('nurse.students.records', compact('student', 'records'));
 }
 
     // Delete a user

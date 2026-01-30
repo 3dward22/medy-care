@@ -98,42 +98,43 @@
 </div>
 
 <script>
-  // Simple datalist -> hidden id mapping
-  (function() {
-    const picker = document.getElementById('studentPicker');
-    const hidden = document.getElementById('student_id');
-    const options = document.getElementById('students').options;
+(function() {
+  const picker = document.getElementById('studentPicker');
+  const hidden = document.getElementById('student_id');
+  const options = document.getElementById('students').options;
 
-    picker.addEventListener('change', () => {
-      hidden.value = '';
-      const val = picker.value;
-      for (let i=0; i<options.length; i++) {
-        if (options[i].value === val) {
-          hidden.value = options[i].dataset.id;
-          break;
-        }
-      }
-    });
+  picker.addEventListener('input', () => {
+    hidden.value = '';
+    const val = picker.value;
 
-    // guardian time toggle
-    const sel = document.getElementById('guardian_notified');
-    const wrap = document.getElementById('guardian_time_wrap');
-    const time = document.getElementById('guardian_notified_at');
-
-    function toggleGuardianTime(){
-      if (sel.value === '1') {
-        wrap.style.display = '';
-        if (!time.value) {
-          time.value = new Date().toISOString().slice(0,16);
-        }
-      } else {
-        wrap.style.display = 'none';
-        time.value = '';
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].value === val) {
+        hidden.value = options[i].dataset.id;
+        break;
       }
     }
+  });
 
-    sel.addEventListener('change', toggleGuardianTime);
-    toggleGuardianTime();
-  })();
+  // guardian time toggle
+  const sel = document.getElementById('guardian_notified');
+  const wrap = document.getElementById('guardian_time_wrap');
+  const time = document.getElementById('guardian_notified_at');
+
+  function toggleGuardianTime(){
+    if (sel.value === '1') {
+      wrap.style.display = '';
+      if (!time.value) {
+        time.value = new Date().toISOString().slice(0,16);
+      }
+    } else {
+      wrap.style.display = 'none';
+      time.value = '';
+    }
+  }
+
+  sel.addEventListener('change', toggleGuardianTime);
+  toggleGuardianTime();
+})();
 </script>
+
 @endsection

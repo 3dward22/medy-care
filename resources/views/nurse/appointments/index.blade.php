@@ -8,9 +8,9 @@
         <div class="flex flex-col sm:flex-row items-center justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                    🩺 Manage Appointments
+                    🩺 Appointment Management
                 </h1>
-                <p class="text-gray-600 text-sm">Review, update, and log findings for each appointment.</p>
+                <p class="text-gray-600 text-sm">Review appointment requests, update schedules, and record clinical findings.</p>
             </div>
         </div>
 
@@ -31,19 +31,19 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-gradient-to-r from-blue-50 to-teal-50 text-gray-700 text-sm uppercase">
                         <tr>
-                            <th class="px-4 py-3 text-left">Student</th>
-                            <th class="px-4 py-3 text-left">Requested</th>
-                            <th class="px-4 py-3 text-left">Approved</th>
-                            <th class="px-4 py-3 text-left">Status</th>
-                            <th class="px-4 py-3 text-left">Completion</th>
-                            <th class="px-4 py-3 text-center">Action</th>
+                            <th class="px-4 py-3 text-left">Patient</th>
+                            <th class="px-4 py-3 text-left">Request Date</th>
+                            <th class="px-4 py-3 text-left">Scheduled Date</th>
+                            <th class="px-4 py-3 text-left">Appointment Status</th>
+                            <th class="px-4 py-3 text-left">Visit Status</th>
+                            <th class="px-4 py-3 text-center">Actions</th>
                             
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($appointments as $appointment)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 font-medium text-gray-800">{{ $appointment->student->name ?? 'Unknown' }}</td>
+                            <td class="px-4 py-3 font-medium text-gray-800">{{ $appointment->student->name ?? 'Patient Record Unavailable' }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('M d, Y h:i A') }}</td>
                             <td class="px-4 py-3 text-gray-500">
                                 @if($appointment->approved_datetime)
@@ -62,22 +62,27 @@
                                     @elseif($appointment->status === 'cancelled') bg-secondary text-white
                                     @endif">
                                     @switch($appointment->status)
-                                        @case('approved') ✅ @break
-                                        @case('pending') ⏳ @break
-                                        @case('rescheduled') 🔁 @break
-                                        @case('declined') ❌ @break
-                                        @case('completed') 🩺 @break
-                                        @case('cancelled') 🚫 @break
+                                    @case('pending') ⏳ Pending Review @break
+                                    @case('approved') ✅ Scheduled @break
+                                    @case('in_session') 🩺 In Consultation @break
+                                    @case('completed') ✔ Visit Completed @break
+                                    @case('declined') ❌ Declined @break
+                                    @case('cancelled') 🚫 Cancelled @break
                                     @endswitch
                                     {{ ucfirst($appointment->status) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">
-    @if($appointment->status === 'completed')
-        <span class="badge bg-success text-white px-3 py-1 rounded-pill">✅ Completed</span>
-    @else
-        <span class="badge bg-secondary text-white px-3 py-1 rounded-pill">Not Completed</span>
-    @endif
+   @if($appointment->status === 'completed')
+    <span class="badge bg-success text-white px-3 py-1 rounded-pill">
+        ✔ Visit Completed
+    </span>
+@else
+    <span class="badge bg-secondary text-white px-3 py-1 rounded-pill">
+        Pending Visit
+    </span>
+@endif
+
 </td>
 
                             <td class="px-4 py-3 text-center">

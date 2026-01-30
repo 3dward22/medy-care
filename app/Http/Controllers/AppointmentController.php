@@ -14,7 +14,7 @@ use App\Models\AppointmentCompletion;
 use Illuminate\Support\Facades\Gate;
 use App\Notifications\UserNotification;
 use App\Events\NewNotification as BroadcastEvent;
-
+use App\Http\Controllers\StudentRecordController;
 
 class AppointmentController extends Controller
 {
@@ -495,6 +495,7 @@ private function notify($userId, $message)
 public function nurseDashboard()
 {
     // ⏳ Pending (no date yet)
+    $pendingAppointmentsCount = Appointment::where('status', 'pending')->count();
     $pendingAppointments = Appointment::with('user')
     ->where('status', 'pending')
     ->orderBy('requested_datetime')
@@ -520,11 +521,12 @@ $upcomingAppointments = Appointment::with('user')
         ->get();
 
     return view('nurse.dashboard', compact(
-        'pendingAppointments',
-        'todayAppointments',
-        'upcomingAppointments',
-        'students'
-    ));
+    'pendingAppointments',
+    'pendingAppointmentsCount',
+    'todayAppointments',
+    'upcomingAppointments',
+    'students'
+));
 }
 
 public function startSession(Appointment $appointment)
