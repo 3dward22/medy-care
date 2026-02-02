@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Notifications\UserNotification;
 use App\Events\NewNotification as BroadcastEvent;
 use App\Http\Controllers\StudentRecordController;
+use App\Models\EmergencyRecord;
 
 class AppointmentController extends Controller
 {
@@ -52,9 +54,7 @@ class AppointmentController extends Controller
     --------------------------------------------------- */
     public function show(Appointment $appointment)
     {
-        if ($appointment->student_id !== Auth::id()) {
-            abort(403, 'Unauthorized');
-        }
+        
 
         return view('appointments.show', compact('appointment'));
     }
@@ -234,67 +234,8 @@ class AppointmentController extends Controller
         ]);
     }
 
-    /* ---------------------------------------------------
-    | 🚨 Emergency record (nurse/admin)
-    --------------------------------------------------- */
-    public function storeEmergency(Request $request)
-    {
-        if (!Gate::allows('is-nurse-or-admin')) {
-            abort(403, 'Unauthorized access.');
-        }
-
-        $request->validate([
-            'student_id' => 'required|exists:users,id',
-            'reason' => 'nullable|string|max:500',
-            'completed_datetime' => 'required|date',
-            'temperature' => 'nullable|string|max:50',
-            'blood_pressure' => 'nullable|string|max:50',
-            'heart_rate' => 'nullable|string|max:50',
-            'additional_notes' => 'nullable|string|max:1000',
-            'findings' => 'nullable|string|max:1000',
-        ]);
-
-        $appointment = Appointment::create([
-            'student_id' => $request->student_id,
-            'user_id' => $request->student_id,
-            'requested_datetime' => now(),
-            'approved_datetime' => now(),
-            'completed_datetime' => $request->completed_datetime,
-            'status' => 'completed',
-            'admin_note' => $request->reason ?? 'Emergency / Walk-in case',
-            'approved_by' => Auth::id(),
-            'temperature' => $request->temperature,
-            'blood_pressure' => $request->blood_pressure,
-            'heart_rate' => $request->heart_rate,
-            'additional_notes' => $request->additional_notes,
-            'findings' => $request->findings,
-        ]);
-
-        AppointmentCompletion::create([
-            'appointment_id' => $appointment->id,
-            'completed_datetime' => $request->completed_datetime,
-            'temperature' => $request->temperature,
-            'blood_pressure' => $request->blood_pressure,
-            'heart_rate' => $request->heart_rate,
-            'findings' => $request->findings,
-            'additional_notes' => $request->additional_notes,
-        ]);
-
-        $recipient = \App\Models\User::where('role', 'admin')->first()
-            ?? \App\Models\User::where('role', 'nurse')->first();
-
-        if ($recipient) {
-            $this->notify($recipient->id, '🚨 Emergency reported by ' . Auth::user()->name);
-        } else {
-            Log::warning('No admin or nurse found to receive emergency notification.');
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Emergency appointment recorded and marked as completed.'
-        ]);
-    }
-
+   
+    
     /* ---------------------------------------------------
     | ❌ Student: Cancel appointment
     --------------------------------------------------- */

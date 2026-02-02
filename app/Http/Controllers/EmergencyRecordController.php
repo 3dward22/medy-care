@@ -41,48 +41,22 @@ class EmergencyRecordController extends Controller
         return view('nurse.emergency.create', compact('students'));
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
 {
-    dd('STORE METHOD HIT');
-    $request->validate([
-        'student_id'            => 'required|exists:users,id',
-        'reported_at'           => 'required|date',
-        'temperature'           => 'required|string|max:50',
-        'blood_pressure'        => 'required|string|max:50',
-        'heart_rate'            => 'required|string|max:50',
-        'symptoms'              => 'required|string|max:2000',
-        'diagnosis'             => 'required|string|max:2000',
-        'treatment'             => 'required|string|max:2000',
-        'additional_notes'      => 'nullable|string|max:2000',
-        'guardian_notified'     => 'required|boolean',
-        'guardian_notified_at'  => 'nullable|date|required_if:guardian_notified,1',
+     $request->validate([
+        'student_id' => 'required|exists:users,id',
+        'reason'     => 'nullable|string',
     ]);
 
-    $record = EmergencyRecord::create([
-        'student_id'           => $request->student_id,
-        'reported_by'          => Auth::id(),
-        'reported_at'          => $request->reported_at,
-        'temperature'          => $request->temperature,
-        'blood_pressure'       => $request->blood_pressure,
-        'heart_rate'           => $request->heart_rate,
-        'symptoms'             => $request->symptoms,
-        'diagnosis'            => $request->diagnosis,
-        'treatment'            => $request->treatment,
-        'additional_notes'     => $request->additional_notes,
-        'guardian_notified'    => (bool) $request->guardian_notified,
-        'guardian_notified_at' => $request->guardian_notified
-            ? $request->guardian_notified_at
-            : null,
+    EmergencyRecord::create([
+        'student_id'        => $request->student_id,
+        'reported_by'       => Auth::id(),
+        'reported_at'       => now(),
+        'additional_notes'  => $request->reason,
+        'guardian_notified' => false,
     ]);
 
-    event(new NewNotification(
-        "🚑 An emergency case report was recorded. Please check your records.",
-        $record->student_id
-    ));
-
-    return redirect()
-        ->route('nurse.emergency.index')
-        ->with('success', 'Emergency report saved successfully.');
+    return back()->with('success', 'Emergency record saved successfully.');
 }
 
 

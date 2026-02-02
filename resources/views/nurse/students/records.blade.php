@@ -21,20 +21,7 @@
                 No medical records found for this student.
             </div>
         @else
-<!-- Filter Buttons -->
-<div class="flex flex-wrap gap-2 mb-6">
-    <button class="btn btn-sm btn-outline-primary filter-btn active" data-type="all">
-        All Records
-    </button>
 
-    <button class="btn btn-sm btn-outline-primary filter-btn" data-type="appointment">
-        Appointments
-    </button>
-
-    <button class="btn btn-sm btn-outline-danger filter-btn" data-type="emergency">
-        Emergency
-    </button>
-</div>
         <!-- Table Container -->
         <div class="bg-white shadow-lg rounded-2xl overflow-hidden border border-gray-100">
             <div class="overflow-x-auto">
@@ -53,29 +40,36 @@
 
                     <tbody>
                         @foreach($records as $record)
-                        <tr class="hover:bg-gray-50 transition record-row"
-    data-type="{{ $record['type'] }}">
+                      <tr class="hover:bg-gray-50 transition">
 
 
                             <!-- Type -->
                             <td class="px-4 py-3">
-                                <span class="badge d-flex align-items-center gap-1 px-3 py-1 rounded-pill
-                                    {{ $record['type'] === 'emergency'
-                                        ? 'bg-danger'
-                                        : 'bg-primary' }}">
-                                    {{ strtoupper($record['type']) }}
-                                </span>
-                            </td>
+    @if($record['type'] === 'emergency')
+        <span class="badge bg-danger px-3 py-2 rounded-pill">
+            🚨 Emergency
+        </span>
+    @else
+        <span class="badge bg-primary px-3 py-2 rounded-pill">
+            Appointment
+        </span>
+    @endif
+</td>
+
 
                             <!-- Date -->
                             <td class="px-4 py-3 text-gray-600">
                                 {{ \Carbon\Carbon::parse($record['date'])->format('M d, Y h:i A') }}
                             </td>
 
-                            <!-- Complaint -->
                             <td class="px-4 py-3 text-gray-700">
-                                {{ $record['complaint'] }}
-                            </td>
+    @if($record['type'] === 'emergency')
+        {{ $record['complaint'] ?? '—' }}
+    @else
+        {{ $record['complaint'] ?? '—' }}
+    @endif
+</td>
+
 
                             <!-- Findings -->
                             <td class="px-4 py-3 text-gray-600">
@@ -104,48 +98,8 @@
 
     </div>
 </main>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const buttons = document.querySelectorAll('.filter-btn');
-    const rows = document.querySelectorAll('.record-row');
 
-    function applyFilter(type) {
-        rows.forEach(row => {
-            if (type === 'all' || row.dataset.type === type) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
 
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const type = btn.dataset.type;
 
-            buttons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            applyFilter(type);
-        });
-    });
-
-    // ✅ run once on load
-    applyFilter('all');
-});
-</script>
-
-<style>
-.filter-btn.active {
-    background-color: #0d6efd;
-    color: #fff;
-    border-color: #0d6efd;
-}
-
-.filter-btn.active[data-type="emergency"] {
-    background-color: #dc3545;
-    border-color: #dc3545;
-}
-</style>
 
 @endsection

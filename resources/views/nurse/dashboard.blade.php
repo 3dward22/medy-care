@@ -409,7 +409,7 @@
     @include('nurse.partials.send-sms-modal')
     <div class="modal fade" id="emergencyModal">
   <div class="modal-dialog">
-    <form method="POST" id="emergencyForm" action="{{ route('nurse.appointments.emergency') }}">
+    <form method="POST" id="emergencyForm" action="{{ route('nurse.emergency.store') }}">
       @csrf
       <div class="modal-content">
         <div class="modal-header bg-danger text-white">

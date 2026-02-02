@@ -23,17 +23,24 @@
 
     <div class="row g-3">
       <div class="col-md-6">
-        <label class="form-label fw-semibold">Student</label>
-        {{-- Simple searchable via datalist (no external libs). If you want Select2 later we can add it. --}}
-        <input class="form-control" list="students" id="studentPicker" placeholder="Type to search...">
-        <datalist id="students">
-          @foreach($students as $s)
-            <option data-id="{{ $s->id }}" value="{{ $s->name }}"></option>
-          @endforeach
-        </datalist>
-        <input type="hidden" name="student_id" id="student_id" value="{{ old('student_id') }}">
-        <div class="form-text">Start typing the student's name, then pick from suggestions.</div>
-      </div>
+    <label class="form-label fw-semibold">Student</label>
+
+    <select name="student_id" class="form-select" required>
+        <option value="">-- Select student --</option>
+
+        @foreach($students as $s)
+            <option value="{{ $s->id }}">
+                {{ $s->name }}
+            </option>
+        @endforeach
+    </select>
+
+    <div class="form-text">
+        Select the student involved in the emergency.
+    </div>
+</div>
+
+
 
       <div class="col-md-6">
         <label class="form-label fw-semibold">Reported At</label>
@@ -99,21 +106,9 @@
 
 <script>
 (function() {
-  const picker = document.getElementById('studentPicker');
-  const hidden = document.getElementById('student_id');
-  const options = document.getElementById('students').options;
 
-  picker.addEventListener('input', () => {
-    hidden.value = '';
-    const val = picker.value;
 
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].value === val) {
-        hidden.value = options[i].dataset.id;
-        break;
-      }
-    }
-  });
+ 
 
   // guardian time toggle
   const sel = document.getElementById('guardian_notified');

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Nurse;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
@@ -41,20 +42,10 @@ class StudentRecordController extends Controller
         });
 
     // 🚑 Emergency records
-    $emergencies = EmergencyRecord::where('student_id', $student->id)
-        ->get()
-        ->map(function ($e) {
-            return [
-                'type' => 'emergency',
-                'date' => $e->reported_at ?? $e->created_at, // IMPORTANT
-                'title' => 'Emergency Case',
-                'complaint' => $e->symptoms,
-                'findings' => "Temp: {$e->temperature}, BP: {$e->blood_pressure}, HR: {$e->heart_rate}",
-                'diagnosis' => $e->diagnosis,
-                'treatment' => $e->treatment,
-                'notes' => $e->additional_notes,
-            ];
-        });
+    $emergencies = EmergencyRecord::where('student_id', $student->id)->get();
+
+
+
 
     // 🔁 Merge and sort
     $records = $appointments

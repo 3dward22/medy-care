@@ -14,7 +14,8 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\GuardianSmsController;
 use App\Http\Controllers\Admin\UserVerificationController;
-use App\Http\Controllers\StudentRecordController;
+use App\Http\Controllers\Nurse\StudentRecordController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -112,9 +113,7 @@ Route::prefix('nurse')
     Route::put('appointments/{appointment}', [AppointmentController::class, 'update'])
         ->name('appointments.update');
 
-    Route::post('/appointments/emergency',
-        [AppointmentController::class, 'storeEmergency'])
-        ->name('appointments.emergency');
+ 
 
     
     // 👩‍🎓 Student medical records
@@ -130,7 +129,8 @@ Route::get('/students/{student}/records',
 
     // 🔔 Notifications
     Route::get('notifications', [NotificationController::class, 'index'])
-        ->name('notifications.index');
+    ->name('notifications.index');
+
 
     // 🚨 Emergency records
     Route::prefix('emergency')->name('emergency.')->group(function () {
@@ -186,7 +186,7 @@ Route::get('/notifications/check', [App\Http\Controllers\NotificationController:
     ->name('notifications.check');
 
     // 🔔 Global notification routes (accessible to all roles)
-Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+Route::get('/notifications', [NotificationController::class, 'index'])->name('student.notifications.index');
 Route::post('/notifications/send', [NotificationController::class, 'sendNotification'])->name('notifications.send');
 Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
