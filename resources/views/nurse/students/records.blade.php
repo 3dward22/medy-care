@@ -45,7 +45,7 @@
 
                             <!-- Type -->
                             <td class="px-4 py-3">
-    @if($record['type'] === 'emergency')
+    @if($record['type'] === 'Emergency')
         <span class="badge bg-danger px-3 py-2 rounded-pill">
             🚨 Emergency
         </span>
@@ -55,6 +55,7 @@
         </span>
     @endif
 </td>
+
 
 
                             <!-- Date -->

@@ -9,21 +9,20 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
-    public function generateMonthlyReport()
-    {
-        $month = Carbon::now()->format('F Y');
-        $appointments = Appointment::whereMonth('requested_datetime', Carbon::now()->month)->get();
+    public function generateMonthlyReport(Request $request)
+{
+    $month = $request->input('month', now()->format('Y-m'));
 
-        $data = [
-            'month' => $month,
-            'total' => $appointments->count(),
-            'approved' => $appointments->where('status', 'approved')->count(),
-            'pending' => $appointments->where('status', 'pending')->count(),
-            'declined' => $appointments->where('status', 'declined')->count(),
-            'appointments' => $appointments,
-        ];
+    $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    $end   = Carbon::createFromFormat('Y-m', $month)->endOfMonth();
 
-        $pdf = Pdf::loadView('reports.monthly', $data)->setPaper('a4', 'portrait');
-        return $pdf->download("MedCare_Report_{$month}.pdf");
-    }
+    $appointments = Appointment::with('student')
+        ->whereBetween('requested_datetime', [$start, $end])
+        ->orderBy('requested_datetime')
+        ->get();
+
+    $pdf = Pdf::loadView('reports.monthly-appointments', compact('appointments', 'month'));
+
+    return $pdf->download("appointments-{$month}.pdf");
+}
 }

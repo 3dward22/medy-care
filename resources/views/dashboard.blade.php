@@ -65,95 +65,75 @@
             </div>
         </div>
 
-        <!-- 🩻 Health Reports / Analytics -->
-        <div class="bg-white rounded-xl shadow-md border border-gray-200 mb-10">
-            <div class="bg-gradient-to-r from-blue-50 to-teal-50 px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-                    <span class="mr-2">📈</span> Health Reports & Analytics
-                </h2>
-                
-            </div>
-<div class="p-6">
-    @if(!isset($commonCauses) || $commonCauses->isEmpty())
-        <p class="text-center text-gray-500">
-            No visit data yet to generate analytics.
-        </p>
-    @else
-        <canvas id="causesChart"
-            data-labels='@json($commonCauses->pluck("findings"))'
-            data-values='@json($commonCauses->pluck("total"))'>
-        </canvas>
-    @endif
+        
+        <div class="bg-white rounded-xl shadow-md border-l-4 border-teal-500 mb-10 hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            📄 Monthly Report
+        </h3>
+        <span class="text-xs text-gray-500">Export appointments by month</span>
+    </div>
+
+    <form method="GET" action="{{ route('reports.monthly') }}" class="px-6 py-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+        <input
+            type="month"
+            name="month"
+            class="form-control w-full sm:w-auto"
+            value="{{ now()->format('Y-m') }}"
+        >
+
+        <button
+            type="submit"
+            class="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-black text-sm rounded-lg hover:bg-teal-700 transition"
+        >
+            ⬇️ Download PDF
+        </button>
+    </form>
 </div>
 
 
-            <div class="p-6">
-                <canvas id="healthChart" 
-                    data-approved="{{ \App\Models\Appointment::where('status', 'approved')->count() }}"
-                    data-pending="{{ \App\Models\Appointment::where('status', 'pending')->count() }}"
-                    data-declined="{{ \App\Models\Appointment::where('status', 'declined')->count() }}">
-                </canvas>
-            </div>
-        </div>
-        <div class="text-right mt-4">
-            <a href="{{ route('reports.monthly') }}" 
-                class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition">
-                🧾 Download Monthly Report (PDF)
-            </a>
-        </div>
-        <!-- 🗓️ Today's Appointments -->
-        <div class="bg-white rounded-xl shadow-md border border-gray-200 mb-10">
-            <div class="bg-gradient-to-r from-blue-50 to-teal-50 px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-                    <span class="mr-2">🗓️</span> Today’s Appointments
-                </h2>
-            </div>
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 mb-10">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            📅 Recent Appointments
+        </h3>
+        <a href="{{ route('admin.appointments.all') }}" class="text-sm text-blue-600 hover:underline">
+            View all →
+        </a>
+    </div>
 
-            <div class="p-6">
-                @php
-                    $todayAppointments = \App\Models\Appointment::whereDate('requested_datetime', \Carbon\Carbon::today())
-                        ->orderBy('requested_datetime', 'asc')
-                        ->take(5)
-                        ->get();
-                @endphp
+    <div class="divide-y">
+        @forelse($latestAppointments as $appointment)
+            <div class="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition">
+                <div>
+                    <p class="font-medium text-gray-800">
+                        {{ $appointment->student->name ?? $appointment->user->name }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        {{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('M d, Y h:i A') }}
+                    </p>
+                </div>
 
-                @if($todayAppointments->isEmpty())
-                    <p class="text-center text-gray-500 py-4">No appointments scheduled for today.</p>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase">Student</th>
-                                    <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase">Date & Time</th>
-                                    <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @foreach($todayAppointments as $appt)
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 font-medium text-gray-800">{{ $appt->student_name ?? 'N/A' }}</td>
-                                        <td class="px-6 py-4 text-gray-600">{{ \Carbon\Carbon::parse($appt->requested_datetime)->format('M d, Y - h:i A') }}</td>
-                                        <td class="px-6 py-4">
-                                            <span class="px-3 py-1 text-xs font-semibold rounded-full 
-                                                @if($appt->status === 'approved') bg-green-100 text-green-700
-                                                @elseif($appt->status === 'pending') bg-yellow-100 text-yellow-700
-                                                @elseif($appt->status === 'declined') bg-red-100 text-red-700
-                                                @else bg-gray-100 text-gray-700 @endif">
-                                                {{ ucfirst($appt->status) }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                    {{ $appointment->status === 'approved' ? 'bg-green-100 text-green-700' :
+                       ($appointment->status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                       ($appointment->status === 'declined' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700')) }}">
+                    {{ ucfirst($appointment->status) }}
+                </span>
             </div>
-        </div>
+        @empty
+            <div class="px-6 py-4 text-sm text-gray-500">
+                No appointments yet.
+            </div>
+        @endforelse
+    </div>
+</div>
 
-        <!-- 👥 User Management -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+
+
+       <!-- 👥 User Management -->
+<div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 mt-10">
+
             <div class="bg-gradient-to-r from-blue-50 to-teal-50 px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-800 flex items-center">
                     <span class="mr-2">👤</span> User Management
@@ -247,78 +227,6 @@
     </div>
 </main>
 
-{{-- Chart.js Script --}}
-@verbatim
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const ctx = document.getElementById('healthChart');
-    if (!ctx) return;
 
-    const approved = ctx.dataset.approved;
-    const pending  = ctx.dataset.pending;
-    const declined = ctx.dataset.declined;
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Approved', 'Pending', 'Declined'],
-            datasets: [{
-                label: 'Appointment Status Overview',
-                data: [approved, pending, declined]
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' },
-                title: { display: true, text: 'Appointment Statistics', font: { size: 16 } }
-            }
-        }
-    });
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const causesCanvas = document.getElementById('causesChart');
-    if (!causesCanvas) return;
-
-    const labels = JSON.parse(causesCanvas.dataset.labels);
-    const values = JSON.parse(causesCanvas.dataset.values);
-
-    new Chart(causesCanvas, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Most Common Visit Causes',
-                data: values,
-                backgroundColor: '#3b82f6',
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                title: {
-                    display: true,
-                    text: 'Top Reasons for Clinic Visits'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 }
-                }
-            }
-        }
-    });
-});
-</script>
-
-
-@endverbatim
 
 @endsection

@@ -97,20 +97,7 @@
     </div>
 
     {{-- 📊 Summary Cards --}}
-<div class="row g-4 mb-4 text-center">
-    <div class="col-md-6">
-        <div class="card summary-card text-success shadow-sm p-4">
-            <h6>Today's Appointments</h6>
-            <h2 id="todayAppointmentsCount">{{ $todayAppointments->count() }}</h2>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card summary-card text-info shadow-sm p-4">
-            <h6>Upcoming Appointments</h6>
-            <h2>{{ $upcomingAppointments->count() }}</h2>
-        </div>
-    </div>
-</div>
+
 
 {{-- 📅 Today's Appointments --}}
 <div class="card card-medcare shadow-sm mb-4">

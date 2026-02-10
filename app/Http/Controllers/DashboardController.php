@@ -27,20 +27,23 @@ class DashboardController extends Controller
     $patientsCount = Patient::count();
     $appointmentsCount = Appointment::count();
 
-    // 📊 Most common causes (from findings column)
-    $commonCauses = Appointment::whereNotNull('findings')
-        ->where('findings', '!=', '')
-        ->select('findings', DB::raw('COUNT(*) as total'))
-        ->groupBy('findings')
-        ->orderByDesc('total')
-        ->limit(5)
+    // 🗓️ Latest 8 appointments (ALL)
+    $latestAppointments = Appointment::with('student') // or with('user')
+        ->latest('requested_datetime')
+        ->take(8)
         ->get();
 
+    // 👥 Users for the table
+    $users = User::latest()->take(10)->get(); // or paginate
+
     return view('dashboard', [
-        'patientsCount'     => $patientsCount,
-        'appointmentsCount'=> $appointmentsCount,
-        'commonCauses'      => $commonCauses,   // ✅ important
+        'patientsCount'       => $patientsCount,
+        'appointmentsCount'  => $appointmentsCount,
+        'latestAppointments' => $latestAppointments,
+        'users'               => $users,
     ]);
+
+
 
 
             case 'nurse':
