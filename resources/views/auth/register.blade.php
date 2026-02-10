@@ -67,6 +67,33 @@
                         <option value="nurse">Nurse</option>
                         <option value="student">Student</option>
                     </select>
+                    <!-- Student Extra Fields -->
+<div x-show="role === 'student'" x-transition class="space-y-4">
+    <div>
+        <x-input-label value="Student Phone" class="text-gray-700 font-semibold" />
+        <x-text-input name="student_phone"
+            class="mt-1 block w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            placeholder="09xxxxxxxxx" />
+        <x-input-error :messages="$errors->get('student_phone')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label value="Guardian Name" class="text-gray-700 font-semibold" />
+        <x-text-input name="guardian_name"
+            class="mt-1 block w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            placeholder="Guardian full name" />
+        <x-input-error :messages="$errors->get('guardian_name')" class="mt-2" />
+    </div>
+
+    <div>
+        <x-input-label value="Guardian Phone" class="text-gray-700 font-semibold" />
+        <x-text-input name="guardian_phone"
+            class="mt-1 block w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            placeholder="09xxxxxxxxx" />
+        <x-input-error :messages="$errors->get('guardian_phone')" class="mt-2" />
+    </div>
+</div>
+
                     <x-input-error :messages="$errors->get('role')" class="mt-2" />
                 </div>
 

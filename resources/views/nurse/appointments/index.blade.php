@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<main class="pt-20 bg-gradient-to-br from-sky-50 via-white to-teal-50 min-h-screen">
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- Header -->
@@ -114,7 +114,7 @@
         </div>
         @endif
     </div>
-</main>
+
 
 <!-- 🩺 Responsive Modal -->
 <div class="modal fade" id="manageAppointmentModal" tabindex="-1" aria-hidden="true">

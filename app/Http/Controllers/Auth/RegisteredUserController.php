@@ -23,26 +23,10 @@ class RegisteredUserController extends Controller
             'email' => 'required|email|unique:users',
             'password' => 'required|confirmed|min:8',
             'role' => 'required|in:admin,nurse,student',
-            'access_code' => 'nullable|string',
+            
         ]);
 
-        // 🔐 ADMIN
-        if ($request->role === 'admin') {
-            if ($request->access_code !== config('app.admin_secret')) {
-                return back()
-                    ->withErrors(['access_code' => 'Invalid admin access code'])
-                    ->withInput();
-            }
-        }
-
-        // 🩺 NURSE
-        if ($request->role === 'nurse') {
-            if ($request->access_code !== config('app.nurse_secret')) {
-                return back()
-                    ->withErrors(['access_code' => 'Invalid nurse access code'])
-                    ->withInput();
-            }
-        }
+        
 
         // 🎓 STUDENT
         if ($request->role === 'student') {

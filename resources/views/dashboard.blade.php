@@ -1,14 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<main class="pt-20 bg-gradient-to-br from-sky-50 via-white to-teal-50 min-h-screen">
+
+
+
     <div class="max-w-7xl mx-auto px-6 py-8">
 
         <!-- 🏥 Header -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-10">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-                <p class="text-gray-600 mt-1">Monitor appointments, users, and analytics</p>
+                <p class="text-gray-600 mt-1">Monitor appointments and user verification</p>
             </div>
             <div class="mt-4 sm:mt-0">
                 <a href="{{ route('admin.appointments.all') }}" 
@@ -225,7 +227,7 @@
             <p class="text-sm text-gray-500">MedCare System © {{ date('Y') }} | Admin Portal</p>
         </div>
     </div>
-</main>
+
 
 
 
