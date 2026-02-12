@@ -19,8 +19,8 @@ RUN composer install --no-dev --optimize-autoloader
 # Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Expose Railway port
+# Expose Railway port (optional)
 EXPOSE 8080
 
-# Start Laravel (IMPORTANT)
-CMD php -S 0.0.0.0:${PORT} -t public
+# Start Laravel (use sh -c so $PORT expands)
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT} -t public"]

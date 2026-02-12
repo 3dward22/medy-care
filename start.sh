@@ -1,4 +1,2 @@
 #!/bin/sh
-
-echo "Starting Apache..."
-exec apache2-foreground
+php -S 0.0.0.0:$PORT -t public
