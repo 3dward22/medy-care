@@ -19,8 +19,13 @@ RUN composer install --no-dev --optimize-autoloader
 # Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
+# Create Laravel temp dirs for Railway
+RUN mkdir -p /tmp/framework/sessions /tmp/framework/cache /tmp/framework/views \
+    && chmod -R 775 /tmp/framework
+
 # Expose Railway port (optional)
 EXPOSE 8080
+
 
 # Start Laravel (use sh -c so $PORT expands)
 CMD ["sh", "-c", "php -S 0.0.0.0:${PORT} -t public"]
