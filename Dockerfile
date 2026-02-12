@@ -21,6 +21,10 @@ COPY . .
 # Install PHP deps
 RUN composer install --no-dev --optimize-autoloader
 
+RUN php artisan config:clear \
+ && php artisan cache:clear \
+ && php artisan view:clear
+
 # Install JS deps + build assets (IMPORTANT)
 RUN npm ci || npm install
 RUN npm run build
