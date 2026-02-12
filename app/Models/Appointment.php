@@ -28,6 +28,8 @@ class Appointment extends Model
         'status',
         'approved_by',
         'admin_note',
+        'reason',        
+        'preferred_time',
     ];
 
     protected $casts = [
