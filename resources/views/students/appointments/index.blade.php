@@ -208,7 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
     method: "POST",
     headers: {
         "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest" 
     },
     body: formData
 });
