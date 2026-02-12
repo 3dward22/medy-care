@@ -1,31 +1,26 @@
 FROM php:8.2-cli
 
-# Install system deps
+# System deps
 RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libzip-dev \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    curl
+    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo_mysql zip
 
-# PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip bcmath gd
-
-# Set working dir
-WORKDIR /app
-
-# Copy files
-COPY . .
-
-# Install composer
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install dependencies
+WORKDIR /app
+
+# Copy app
+COPY . .
+
+# Install PHP deps
 RUN composer install --no-dev --optimize-autoloader
 
+# Permissions
+RUN chown -R www-data:www-data storage bootstrap/cache
+
+# Expose Railway port
 EXPOSE 8080
-ENV WEB_CONCURRENCY=1
-CMD php -S 0.0.0.0:$PORT -t public
+
+# Start Laravel (IMPORTANT)
+CMD php -S 0.0.0.0:${PORT} -t public
