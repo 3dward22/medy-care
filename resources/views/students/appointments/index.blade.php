@@ -215,9 +215,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ✅ FIRST: check HTTP status
 if (!response.ok) {
-    toastr.error("Request failed. Please check your input.", "Error");
+    const text = await response.text();
+    console.error("Server error response:", text);
+    toastr.error("Request failed. Check console.", "Error");
     return;
 }
+
 
 // ✅ SECOND: safely parse JSON
 let result;

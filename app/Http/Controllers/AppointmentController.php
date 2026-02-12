@@ -64,35 +64,52 @@ class AppointmentController extends Controller
     --------------------------------------------------- */
     public function store(Request $request)
 {
-    $request->validate([
-        'reason' => 'required|string|max:500',
-        'preferred_time' => 'nullable|string|max:100',
-    ]);
+    try {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+            'preferred_time' => 'nullable|string|max:100',
+        ]);
 
-    $appointment = Appointment::create([
-        'student_id' => Auth::id(),
-        'user_id' => Auth::id(),
-        'requested_datetime' => now(), // 🔥 request time only
-        'reason' => $request->reason,
-        'preferred_time' => $request->preferred_time,
-        'status' => 'pending',
-    ]);
+        $appointment = Appointment::create([
+            'student_id' => Auth::id(),
+            'user_id' => Auth::id(),
+            'requested_datetime' => now(),
+            'reason' => $validated['reason'],
+            'preferred_time' => $validated['preferred_time'] ?? null,
+            'status' => 'pending',
+        ]);
 
-    // 🔔 Notify all nurses
-    $nurses = \App\Models\User::where('role', 'nurse')->get();
+        // 🔔 Notify nurses
+        $nurses = \App\Models\User::where('role', 'nurse')->get();
+        foreach ($nurses as $nurse) {
+            $this->notify(
+                $nurse->id,
+                '📅 New appointment request from ' . Auth::user()->name
+            );
+        }
 
-    foreach ($nurses as $nurse) {
-        $this->notify(
-            $nurse->id,
-            '📅 New appointment request from ' . Auth::user()->name
-        );
+        return response()->json([
+            'success' => true,
+            'appointment' => $appointment
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+
+    } catch (\Throwable $e) {
+        \Log::error('Appointment store failed: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error occurred.',
+        ], 500);
     }
-
-    return response()->json([
-        'success' => true,
-        'appointment' => $appointment
-    ]);
 }
+
 
     /* ---------------------------------------------------
     | 🧭 Nurse/Admin: Manage appointments (approve, decline, etc.)
@@ -336,10 +353,11 @@ $todayAppointments = Appointment::with('user')
         // If $student is actually a User, load patient info
         $patient = \App\Models\Patient::where('user_id', $student->id)->first();
 
-        if (!$patient || empty($patient->phone)) {
-            Log::warning('Guardian phone not found for student ID ' . $student->id);
-            return;
-        }
+if (!$patient || empty($patient->phone)) {
+    Log::warning('No patient phone found for user ' . $student->id);
+    return; 
+}
+
 
         // 🔧 Normalize phone number to +63 format
         $phone = $patient->phone;
