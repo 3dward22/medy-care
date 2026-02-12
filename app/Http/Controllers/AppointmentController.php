@@ -64,12 +64,7 @@ class AppointmentController extends Controller
     --------------------------------------------------- */
     public function store(Request $request)
 {
-    if (!$request->wantsJson()) {
-    return response()->json([
-        'success' => false,
-        'message' => 'JSON request required'
-    ], 406);
-}
+    
 
     try {
         $validated = $request->validate([
