@@ -16,6 +16,15 @@ use App\Http\Controllers\GuardianSmsController;
 use App\Http\Controllers\Admin\UserVerificationController;
 use App\Http\Controllers\Nurse\StudentRecordController;
 
+// routes/web.php
+Route::get('/_envcheck', function () {
+    return [
+        'DB_HOST' => config('database.connections.mysql.host'),
+        'DB_PORT' => config('database.connections.mysql.port'),
+        'DB_DATABASE' => config('database.connections.mysql.database'),
+        'DB_SOCKET' => config('database.connections.mysql.unix_socket'),
+    ];
+});
 
 /*
 |--------------------------------------------------------------------------
