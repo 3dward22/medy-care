@@ -2,11 +2,15 @@ FROM php:8.2-cli
 
 # System deps
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
+    git unzip libzip-dev libpng-dev libonig-dev libxml2-dev curl \
     && docker-php-ext-install pdo_mysql zip
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Install Node.js (for Vite build)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
 
 WORKDIR /app
 
@@ -16,6 +20,10 @@ COPY . .
 # Install PHP deps
 RUN composer install --no-dev --optimize-autoloader
 
+# Install JS deps + build assets (IMPORTANT)
+RUN npm ci || npm install
+RUN npm run build
+
 # Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
@@ -23,9 +31,5 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 RUN mkdir -p /tmp/framework/sessions /tmp/framework/cache /tmp/framework/views \
     && chmod -R 775 /tmp/framework
 
-# Expose Railway port (optional)
 EXPOSE 8080
-
-
-# Start Laravel (use sh -c so $PORT expands)
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT} -t public"]
+CMD ["sh", "-c", "php -S 0.0.0.0:$PORT -t public"]
