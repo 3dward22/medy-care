@@ -18,6 +18,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
     )
 ->withMiddleware(function (Middleware $middleware): void {
 
+
+    // Trust Railway proxy 
+    $middleware->prepend(\App\Http\Middleware\TrustProxies::class);
+
     // Prepend CORS middleware
     $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
 

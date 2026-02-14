@@ -48,12 +48,12 @@ class DashboardController extends Controller
 
             case 'nurse':
                 $pendingAppointmentsCount = Appointment::where('status', 'pending')->count();
-                $todayAppointments = Appointment::with('user')
+                $todayAppointments = Appointment::with('student')
                      ->whereDate('requested_datetime', Carbon::today())
                      ->orderBy('requested_datetime', 'asc')
                      ->get();
 
-                 $upcomingAppointments = Appointment::with('user')
+                 $upcomingAppointments = Appointment::with('student')
                     ->where('requested_datetime', '>=', Carbon::today())
                     ->orderBy('requested_datetime', 'asc')
                     ->get();
@@ -71,7 +71,7 @@ class DashboardController extends Controller
 
 
             case 'student':
-                $appointments = Appointment::where('user_id', $user->id)->get();
+                $appointments = Appointment::where('student_id', $user->id)->get();
 
                 return view('students.dashboard', [
                     'appointments' => $appointments

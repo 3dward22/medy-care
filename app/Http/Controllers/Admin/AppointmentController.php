@@ -11,16 +11,16 @@ class AppointmentController extends Controller
 {
     public function index()
     {
-        $allAppointments = Appointment::with('user')
+        $allAppointments = Appointment::with('student')
             ->orderBy('requested_datetime')
             ->get();
 
-        $todayAppointments = Appointment::with('user')
+        $todayAppointments = Appointment::with('student')
             ->whereDate('requested_datetime', Carbon::today())
             ->orderBy('requested_datetime')
             ->get();
 
-        $weekAppointments = Appointment::with('user')
+        $weekAppointments = Appointment::with('student')
             ->whereBetween('requested_datetime', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
             ->orderBy('requested_datetime')
             ->get();

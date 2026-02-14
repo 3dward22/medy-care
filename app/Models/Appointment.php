@@ -22,7 +22,6 @@ class Appointment extends Model
         
     protected $fillable = [
         'student_id',
-        'user_id',
         'requested_datetime',
         'approved_datetime',
         'status',
@@ -47,8 +46,5 @@ class Appointment extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+
 }

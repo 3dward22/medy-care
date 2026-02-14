@@ -3,21 +3,7 @@
 @section('content')
 <div class="container">
 
-    <!-- 🔗 Quick navigation buttons -->
-    <div class="mb-3">
-        <a href="{{ route('admin.appointments.all') }}" 
-           class="btn {{ Route::is('admin.appointments.all') ? 'btn-primary' : 'btn-outline-primary' }} me-2">
-           All
-        </a>
-        <a href="{{ route('admin.appointments.today') }}" 
-           class="btn {{ Route::is('admin.appointments.today') ? 'btn-success' : 'btn-outline-success' }} me-2">
-           Today
-        </a>
-        <a href="{{ route('admin.appointments.week') }}" 
-           class="btn {{ Route::is('admin.appointments.week') ? 'btn-warning text-white' : 'btn-outline-warning' }}">
-           This Week
-        </a>
-    </div>
+    
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>📅 All Appointments</h2>
@@ -55,9 +41,11 @@
                         <td>
                             <span class="badge 
                                 @if($appointment->status === 'pending') bg-warning
+                                @elseif($appointment->status === 'completed') bg-success
                                 @elseif($appointment->status === 'approved') bg-success
                                 @elseif($appointment->status === 'rescheduled') bg-info
                                 @elseif($appointment->status === 'declined') bg-danger
+                                @elseif($appointment->status === 'cancelled') bg-danger
                                 @endif">
                                 {{ ucfirst($appointment->status) }}
                             </span>

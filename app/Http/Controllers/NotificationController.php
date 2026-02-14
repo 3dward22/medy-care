@@ -54,11 +54,11 @@ public function markAllAsRead()
     public function sendNotification(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'student_id' => 'required|exists:users,id',
             'message' => 'required|string|max:255',
         ]);
 
-        $user = \App\Models\User::find($data['user_id']);
+        $user = \App\Models\User::find($data['student_id']);
 
         // Store in DB (anonymous notification is fine)
         $user->notify(new class($data['message']) extends \Illuminate\Notifications\Notification {
@@ -68,7 +68,7 @@ public function markAllAsRead()
         });
 
         // Broadcast live to user.{id}
-        broadcast(new NewNotification($data['user_id'], $data['message']))->toOthers();
+        broadcast(new NewNotification($data['student_id'], $data['message']))->toOthers();
 
         return response()->json(['success' => true]);
     }

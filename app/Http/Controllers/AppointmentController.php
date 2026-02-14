@@ -74,7 +74,7 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::create([
             'student_id' => Auth::id(),
-            'user_id' => Auth::id(),
+            
             'requested_datetime' => now(),
             'reason' => $validated['reason'],
             'preferred_time' => $validated['preferred_time'] ?? null,
@@ -308,7 +308,7 @@ class AppointmentController extends Controller
     {
         $today = Carbon::today();
 
-$todayAppointments = Appointment::with('user')
+$todayAppointments = Appointment::with('student')
     ->whereDate('approved_datetime', $today)
     ->whereIn('status', ['approved', 'in_session'])
     ->orderBy('requested_datetime', 'desc')
@@ -353,7 +353,7 @@ $todayAppointments = Appointment::with('user')
     try {
         // 🔍 GET PHONE FROM PATIENT RECORD
         // If $student is actually a User, load patient info
-        $patient = \App\Models\Patient::where('user_id', $student->id)->first();
+        $patient = \App\Models\Patient::where('student_id', $student->id)->first();
 
 if (!$patient || empty($patient->phone)) {
     Log::warning('No patient phone found for user ' . $student->id);
@@ -457,21 +457,21 @@ public function nurseDashboard()
 {
     // ⏳ Pending (no date yet)
     $pendingAppointmentsCount = Appointment::where('status', 'pending')->count();
-    $pendingAppointments = Appointment::with('user')
+    $pendingAppointments = Appointment::with('student')
     ->where('status', 'pending')
     ->orderBy('requested_datetime')
     ->paginate(10);
 
 
     // 📋 TODAY — auto moves here when date == today
-    $todayAppointments = Appointment::with('user')
+    $todayAppointments = Appointment::with('student')
     ->whereDate('approved_datetime', Carbon::today())
     ->whereIn('status', ['approved', 'in_session'])
     ->paginate(10);
 
     // 🗓️ UPCOMING — auto moves out when date becomes today
     
-$upcomingAppointments = Appointment::with('user')
+$upcomingAppointments = Appointment::with('student')
     ->whereDate('approved_datetime', '>', Carbon::today())
     ->where('status', 'approved')
     ->paginate(10);
