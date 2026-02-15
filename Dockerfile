@@ -22,8 +22,7 @@ COPY . .
 # Install PHP deps
 RUN composer install --no-dev --optimize-autoloader
 
-RUN php artisan optimize:clear \
- && php artisan config:clear \
+RUN php artisan config:clear \
  && php artisan route:clear \
  && php artisan view:clear
 
