@@ -26,6 +26,8 @@ Route::get('/_envcheck', function () {
     ];
 });
 
+Route::get('/_debug/url', fn () => config('app.url'));
+
 /*
 |--------------------------------------------------------------------------
 | Guest Routes
