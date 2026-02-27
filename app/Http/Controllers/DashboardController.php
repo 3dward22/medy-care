@@ -81,4 +81,12 @@ class DashboardController extends Controller
                 abort(403, 'Unauthorized');
         }
     }
+    public function studentAppointmentsPartial()
+{
+    $appointments = \App\Models\Appointment::where('student_id', Auth::id())
+        ->latest()
+        ->get();
+
+    return view('students.partials.appointments', compact('appointments'));
+}
 }

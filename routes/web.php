@@ -15,6 +15,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\GuardianSmsController;
 use App\Http\Controllers\Admin\UserVerificationController;
 use App\Http\Controllers\Nurse\StudentRecordController;
+use App\Http\Controllers\NurseController;
+
 
 // routes/web.php
 Route::get('/_envcheck', function () {
@@ -101,6 +103,11 @@ Route::prefix('nurse')
     Route::get('/dashboard', [AppointmentController::class, 'nurseDashboard'])
     ->name('dashboard');
 
+    Route::get('/today-appointments/partial', [NurseController::class, 'todayAppointmentsPartial'])
+    ->name('today.partial');
+
+    Route::get('/appointment-requests/partial', [NurseController::class, 'appointmentRequestsPartial'])
+    ->name('requests.partial');
 
     // 🩺 Appointment session flow
     Route::post('/appointments/{appointment}/start',
@@ -162,6 +169,10 @@ Route::get('/students/{student}/records',
     ->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');
+
+
+        Route::get('/appointments/partial', [DashboardController::class, 'studentAppointmentsPartial'])
+    ->name('student.appointments.partial');
 
         Route::resource('appointments', AppointmentController::class)
             ->only(['index', 'show', 'store'])

@@ -91,6 +91,10 @@
                 <button class="btn btn-light btn-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#sendSmsModal">
                     📩 Send SMS to Guardian
                 </button>
+                <a href="{{ route('nurse.students.index') }}"
+       class="btn btn-info btn-pill shadow-sm">
+        📖 Student Records
+    </a>
             </div>
             
         </div>
@@ -193,77 +197,12 @@
 </div>
 
 {{-- 🟡 Appointment Requests --}}
-<div class="card summary-card text-warning shadow-sm mb-4 border-0">
-    <div class="card-body p-4">
-
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-semibold mb-0">🟡 Appointment Requests</h4>
-
-            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-                Total: {{ $pendingAppointmentsCount }}
-            </span>
-        </div>
-
-        @if ($pendingAppointments->count() > 0)
-            <ul class="list-group list-group-flush">
-
-                @foreach ($pendingAppointments->take(5) as $appointment)
-                    <li class="list-group-item d-flex justify-content-between align-items-center py-3 border-0 border-bottom">
-
-                        {{-- Student --}}
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
-                                🧑‍🎓
-                            </div>
-
-                            <div>
-                                <h6 class="fw-semibold mb-1">
-                                    {{ $appointment->user->name ?? 'Unknown' }}
-                                </h6>
-
-                                <p class="text-muted mb-0" style="font-size: 0.9rem;">
-                                    Requested:
-                                    {{ \Carbon\Carbon::parse($appointment->requested_datetime)->format('M d, Y h:i A') }}
-                                </p>
-                            </div>
-                        </div>
-
-                        {{-- Review --}}
-                        <div>
-                            <button
-                                class="btn btn-warning btn-sm btn-pill"
-                                data-bs-toggle="modal"
-                                data-bs-target="#manageAppointmentModal"
-                                data-action="{{ route('nurse.appointments.update', $appointment->id) }}"
-                                data-status="pending">
-                                Review
-                            </button>
-                        </div>
-
-                    </li>
-                @endforeach
-
-            </ul>
-
-            <div class="text-end mt-3">
-                <a href="{{ route('nurse.appointments.index') }}"
-                   class="btn btn-outline-warning btn-pill px-4">
-                    View All Requests →
-                </a>
-            </div>
-
-        @else
-            <div class="text-center py-4 text-muted">
-                No new appointment requests.
-            </div>
-        @endif
-
-    </div>
+<div id="appointmentRequestsWrapper">
+    @include('nurse.partials.appointment-requests')
 </div>
 
 
-
-{{-- ⚡ Quick Links (without Guardian SMS Log) --}}
+<!--{{-- ⚡ Quick Links (without Guardian SMS Log) --}}
 <h4 class="fw-semibold mb-3">⚡ Quick Access</h4>
 <div class="row g-3 mb-4">
     
@@ -275,7 +214,7 @@
             <a href="{{ route('nurse.students.index') }}" class="btn btn-info btn-pill w-100">Open</a>
         </div>
     </div>
-</div>
+</div>-->
 <!-- 🩺 Manage Appointment Modal -->
 <div class="modal fade" id="manageAppointmentModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -582,6 +521,21 @@ completeForm.addEventListener('submit', async function (e) {
         timeOut: '3000'
     };
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const wrapper = document.getElementById('appointmentRequestsWrapper');
+
+    setInterval(async () => {
+        try {
+            const res = await fetch("{{ route('nurse.requests.partial') }}");
+            const html = await res.text();
+            if (wrapper) wrapper.innerHTML = html;
+        } catch (e) {
+            console.error('Auto-refresh (requests) failed', e);
+        }
+    }, 5000); // refresh every 5 seconds
+});
+
 </script>
 
 
