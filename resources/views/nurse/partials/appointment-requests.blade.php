@@ -21,7 +21,8 @@
                                 data-bs-toggle="modal"
                                 data-bs-target="#manageAppointmentModal"
                                 data-action="{{ route('nurse.appointments.update', $appointment->id) }}"
-                                data-status="pending">
+                                data-status="pending"
+                                data-reason="{{ e($appointment->reason ?? '') }}">
                             Review
                         </button>
                     </li>

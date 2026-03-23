@@ -46,8 +46,11 @@ class Appointment extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-public function user()
-{
-    return $this->belongsTo(\App\Models\User::class);
-}
+    /**
+     * Alias to the student requestor for backward-compatible user usage.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
 }

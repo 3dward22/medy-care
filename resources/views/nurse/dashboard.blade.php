@@ -153,7 +153,8 @@
             data-bs-toggle="modal"
             data-bs-target="#manageAppointmentModal"
             data-action="{{ route('nurse.appointments.update', $appointment->id) }}"
-            data-status="pending">
+            data-status="pending"
+            data-reason="{{ $appointment->reason }}">
             ✅ Review
         </button>
     @endif
@@ -253,6 +254,13 @@
                 <option value="declined">Decline</option>
                 
               </select>
+              
+    </div>
+              <div class="mb-3">
+        <label class="form-label fw-semibold">📝 Requested Reason</label>
+        <div id="requested_reason" class="p-3 bg-light rounded text-dark">
+            No reason provided
+        </div>
             </div>
           </div>
 
@@ -384,7 +392,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const allowed = ['approved','rescheduled','declined'];
         const current = button.getAttribute('data-status');
         document.getElementById('status').value = allowed.includes(current) ? current : 'approved';
-
+        const reason = button.getAttribute('data-reason');
+document.getElementById('requested_reason').innerText =
+    reason && reason.trim() !== '' ? reason : 'No reason provided';
         document.getElementById('admin_note').value = button.getAttribute('data-note') ?? '';
         document.getElementById('findings').value   = button.getAttribute('data-findings') ?? '';
     });

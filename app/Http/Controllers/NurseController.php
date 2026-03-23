@@ -9,7 +9,7 @@ class NurseController extends Controller
 {
     public function todayAppointmentsPartial()
     {
-        $todayAppointments = Appointment::with('user')
+        $todayAppointments = Appointment::with('student')
             ->whereDate('requested_datetime', now()->toDateString())
             ->whereIn('status', ['pending', 'approved', 'in_session'])
             ->latest()
@@ -20,7 +20,7 @@ class NurseController extends Controller
 
     public function appointmentRequestsPartial()
     {
-        $pendingAppointments = Appointment::with('user')
+        $pendingAppointments = Appointment::with('student')
             ->where('status', 'pending')
             ->latest()
             ->get();
