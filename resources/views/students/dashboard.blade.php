@@ -28,16 +28,27 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const wrapper = document.getElementById('studentAppointmentsWrapper');
+    const refreshInterval = 5000;
 
     setInterval(async () => {
+        if (!wrapper) {
+            return;
+        }
+
+        // Skip auto-refresh while any appointment modal is open,
+        // so the student can keep viewing details without the markup being replaced.
+        if (document.querySelector('.modal.show')) {
+            return;
+        }
+
         try {
             const res = await fetch("{{ route('student.appointments.partial') }}");
             const html = await res.text();
-            if (wrapper) wrapper.innerHTML = html;
+            wrapper.innerHTML = html;
         } catch (e) {
             console.error('Student auto-refresh failed', e);
         }
-    }, 5000);
+    }, refreshInterval);
 });
 </script>
 @endsection
