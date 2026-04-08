@@ -391,10 +391,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // ✅ Status: only allow the options your validator accepts
         const allowed = ['approved','rescheduled','declined'];
         const current = button.getAttribute('data-status');
+
         document.getElementById('status').value = allowed.includes(current) ? current : 'approved';
         const reason = button.getAttribute('data-reason');
 document.getElementById('requested_reason').innerText =
     reason && reason.trim() !== '' ? reason : 'No reason provided';
+    
         document.getElementById('admin_note').value = button.getAttribute('data-note') ?? '';
         document.getElementById('findings').value   = button.getAttribute('data-findings') ?? '';
     });
