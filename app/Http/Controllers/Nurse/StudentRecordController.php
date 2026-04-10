@@ -39,16 +39,23 @@ class StudentRecordController extends Controller
     // ✅ Completed appointments
     $appointments = Appointment::where('student_id', $student->id)
         ->where('status', 'completed')
+        ->with('completion')
         ->get()
         ->map(function ($a) {
+            $completion = $a->completion;
             return [
                 'type' => 'Appointment', 
                 'date' => $a->created_at,
                 'title' => 'Clinic Visit',
-                'complaint' => $a->complaint,
-                'findings' => $a->findings,
-                'diagnosis' => $a->diagnosis,
-                'treatment' => $a->notes,
+                'reason' => $a->reason ?? '—',
+                'complaint' => $a->complaint ?? '—',
+                'findings' => $completion?->findings ?? $a->findings ?? '—',
+                'diagnosis' => $a->diagnosis ?? '—',
+                'treatment' => $completion?->additional_notes ?? $a->notes ?? '—',
+                'temperature' => $completion?->temperature ?? $a->temperature ?? '—',
+                'blood_pressure' => $completion?->blood_pressure ?? $a->blood_pressure ?? '—',
+                'heart_rate' => $completion?->heart_rate ?? $a->heart_rate ?? '—',
+                'additional_notes' => $completion?->additional_notes ?? $a->additional_notes ?? '—',
             ];
         });
 
@@ -60,10 +67,15 @@ class StudentRecordController extends Controller
                 'type' => 'Emergency',
                 'date' => $e->created_at, // or your incident date
                 'title' => 'Emergency Case',
+                'reason' => $e->reason ?? '—',
                 'complaint' => $e->complaint ?? $e->symptoms ?? '—',
                 'findings' => $e->findings ?? '—',
                 'diagnosis' => $e->diagnosis ?? '—',
                 'treatment' => $e->additional_notes ?? $e->notes ?? '—',
+                'temperature' => $e->temperature ?? '—',
+                'blood_pressure' => $e->blood_pressure ?? '—',
+                'heart_rate' => $e->heart_rate ?? '—',
+                'additional_notes' => $e->additional_notes ?? '—',
             ];
         });
 

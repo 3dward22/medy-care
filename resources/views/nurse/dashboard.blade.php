@@ -322,9 +322,15 @@
             </div>
 
             <div class="col-12">
-              <label class="form-label fw-semibold">Findings & Treatment</label>
-              <textarea name="additional_notes" class="form-control" rows="3"
-                placeholder="e.g. Mild fever, provided medicine and rest advised..."></textarea>
+              <label class="form-label fw-semibold">Findings</label>
+              <textarea name="findings" class="form-control" rows="2"
+                placeholder="e.g. Mild fever, normal blood pressure..."></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">Additional Notes & Treatment</label>
+              <textarea name="additional_notes" class="form-control" rows="2"
+                placeholder="e.g. Provided medicine and rest advised..."></textarea>
             </div>
 
           </div>

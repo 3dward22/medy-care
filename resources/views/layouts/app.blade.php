@@ -49,7 +49,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3v3h6v-3c0-1.657-1.343-3-3-3z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v8h16v-8M2 12l10-9 10 9" />
                     </svg>
-                    MedCare
+                    SMedCare
                 </a>
 
                 {{-- Desktop Links --}}

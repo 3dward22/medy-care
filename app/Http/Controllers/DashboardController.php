@@ -71,7 +71,9 @@ class DashboardController extends Controller
 
 
             case 'student':
-                $appointments = Appointment::where('student_id', $user->id)->get();
+                $appointments = Appointment::where('student_id', $user->id)
+                    ->with('completion')
+                    ->get();
 
                 return view('students.dashboard', [
                     'appointments' => $appointments
@@ -84,6 +86,7 @@ class DashboardController extends Controller
     public function studentAppointmentsPartial()
 {
     $appointments = \App\Models\Appointment::where('student_id', Auth::id())
+        ->with('completion')
         ->latest()
         ->get();
 

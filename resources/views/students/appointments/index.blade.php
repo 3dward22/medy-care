@@ -36,7 +36,8 @@
                             <th class="px-6 py-3 text-left">Requested At</th>
                             <th class="px-6 py-3 text-left">Status</th>
                             <th class="px-6 py-3 text-left">Approved Date</th>
-                            <th class="px-6 py-3 text-left">Nurse Note</th>
+                            <th class="px-6 py-3 text-left">Findings</th>
+                        <!--    <th class="px-6 py-3 text-left">Nurse Note</th>-->
                             <th class="px-6 py-3 text-center">Action</th>
                         </tr>
                     </thead>
@@ -93,15 +94,28 @@
     @endif
 </td>
 
-                               <td class="px-6 py-4 text-gray-600">
-    @if($appointment->status === 'completed')
-        {{ $appointment->admin_note ?? '—' }}
+    <td class="px-6 py-4 text-gray-600">
+    @if($appointment->completion?->findings)
+        <span class="italic text-sm text-gray-700">
+            "{{ \Illuminate\Support\Str::limit($appointment->completion->findings, 50, '...') }}"
+        </span>
     @else
         <span class="text-gray-400 italic text-sm">
-            Available after appointment
+            No findings yet
         </span>
     @endif
 </td>
+<!--<td class="px-6 py-4 text-gray-600">
+    @if($appointment->completion?->admin_note)
+        <span class="italic text-sm text-gray-700">
+            "{{ \Illuminate\Support\Str::limit($appointment->completion->admin_note, 50, '...') }}"
+        </span>
+    @else
+        <span class="text-gray-400 italic text-sm">
+            No notes yet
+        </span>
+    @endif
+</td>-->
 
                                 <td class="px-6 py-4 text-center">
                                     @if($appointment->status === 'pending')

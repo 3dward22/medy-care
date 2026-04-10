@@ -29,6 +29,15 @@ class Appointment extends Model
         'admin_note',
         'reason',        
         'preferred_time',
+        'complaint',
+        'findings',
+        'diagnosis',
+        'notes',
+        'additional_notes',
+        'temperature',
+        'blood_pressure',
+        'heart_rate',
+        'completed_datetime',
     ];
 
     protected $casts = [
@@ -52,5 +61,10 @@ class Appointment extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function completion()
+    {
+        return $this->hasOne(AppointmentCompletion::class, 'appointment_id');
     }
 }

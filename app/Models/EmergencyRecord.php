@@ -15,9 +15,13 @@ class EmergencyRecord extends Model
         'blood_pressure',
         'heart_rate',
         'symptoms',
+        'complaint',
+        'findings',
         'diagnosis',
         'treatment',
+        'notes',
         'additional_notes',
+        'reason',
         'guardian_notified',
         'guardian_notified_at',
     ];

@@ -56,9 +56,9 @@
                                 </span>
                             </p>
 
-                            @if($appointment->findings)
+                            @if($appointment->completion?->findings || $appointment->findings)
                                 <p class="text-sm mt-2 text-gray-600 italic">
-                                    “{{ Str::limit($appointment->findings, 60, '...') }}”
+                                    "{{ Str::limit($appointment->completion?->findings ?? $appointment->findings, 60, '...') }}"
                                 </p>
                             @else
                                 <p class="text-sm mt-2 text-gray-400 italic">No findings yet.</p>

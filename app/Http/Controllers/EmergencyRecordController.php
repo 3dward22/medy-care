@@ -52,7 +52,7 @@ class EmergencyRecordController extends Controller
         'student_id'        => $request->student_id,
         'reported_by'       => Auth::id(),
         'reported_at'       => now(),
-        'additional_notes'  => $request->reason,
+        'reason'            => $request->reason,
         'guardian_notified' => false,
     ]);
 

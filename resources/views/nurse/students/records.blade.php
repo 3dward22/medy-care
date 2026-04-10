@@ -31,17 +31,16 @@
                         <tr>
                             <th class="px-4 py-3 text-left">Type</th>
                             <th class="px-4 py-3 text-left">Date</th>
-                            <th class="px-4 py-3 text-left">Complaint / Symptoms</th>
+                            <th class="px-4 py-3 text-left">Reason for Visit</th>
                             <th class="px-4 py-3 text-left">Findings</th>
-                            <th class="px-4 py-3 text-left">Diagnosis</th>
-                            <th class="px-4 py-3 text-left">Treatment / Notes</th>
+                            <th class="px-4 py-3 text-left">Temperature</th>
+                            <th class="px-4 py-3 text-left">Heart Rate</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @foreach($records as $record)
                       <tr class="hover:bg-gray-50 transition">
-
 
                             <!-- Type -->
                             <td class="px-4 py-3">
@@ -56,35 +55,29 @@
     @endif
 </td>
 
-
-
                             <!-- Date -->
                             <td class="px-4 py-3 text-gray-600">
                                 {{ \Carbon\Carbon::parse($record['date'])->format('M d, Y h:i A') }}
                             </td>
 
+                            <!-- Reason for Visit -->
                             <td class="px-4 py-3 text-gray-700">
-    @if($record['type'] === 'emergency')
-        {{ $record['complaint'] ?? '—' }}
-    @else
-        {{ $record['complaint'] ?? '—' }}
-    @endif
-</td>
-
+                                {{ $record['reason'] ?? '—' }}
+                            </td>
 
                             <!-- Findings -->
                             <td class="px-4 py-3 text-gray-600">
                                 {{ $record['findings'] ?? '—' }}
                             </td>
 
-                            <!-- Diagnosis -->
+                            <!-- Temperature -->
                             <td class="px-4 py-3 text-gray-600">
-                                {{ $record['diagnosis'] ?? '—' }}
+                                {{ $record['temperature'] ?? '—' }}
                             </td>
 
-                            <!-- Treatment -->
+                            <!-- Heart Rate -->
                             <td class="px-4 py-3 text-gray-600">
-                                {{ $record['treatment'] ?? '—' }}
+                                {{ $record['heart_rate'] ?? '—' }}
                             </td>
 
                         </tr>
