@@ -13,6 +13,7 @@ use App\Models\GuardianSmsLog;
 use Illuminate\Support\Facades\Http;
 use App\Models\AppointmentCompletion;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use App\Notifications\UserNotification;
 use App\Events\NewNotification as BroadcastEvent;
 use App\Http\Controllers\StudentRecordController;
@@ -220,6 +221,8 @@ class AppointmentController extends Controller
 
         $request->validate([
             'completed_datetime' => 'required|date',
+            'sickness' => 'required|string|max:100',
+            'other_sickness' => 'nullable|string|max:100',
             'temperature' => 'nullable|string|max:50',
             'blood_pressure' => 'nullable|string|max:50',
             'heart_rate' => 'nullable|string|max:50',
@@ -227,9 +230,21 @@ class AppointmentController extends Controller
             'additional_notes' => 'nullable|string|max:1000',
         ]);
 
+        $resolvedSickness = $request->sickness === 'Others'
+            ? trim((string) $request->other_sickness)
+            : trim((string) $request->sickness);
+
+        if ($resolvedSickness === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enter the sickness name.',
+            ], 422);
+        }
+
         AppointmentCompletion::create([
             'appointment_id' => $appointment->id,
             'completed_datetime' => $request->completed_datetime,
+            'sickness' => $resolvedSickness,
             'temperature' => $request->temperature,
             'blood_pressure' => $request->blood_pressure,
             'heart_rate' => $request->heart_rate,
@@ -246,6 +261,14 @@ class AppointmentController extends Controller
         if ($student) {
             $this->notify($student->id, "📢 Your check-up has been completed. Thank you for visiting the clinic.");
         }
+
+        $completedBy = Auth::user();
+        $studentName = $student?->name ?? 'Unknown student';
+        $completedAt = Carbon::parse($request->completed_datetime)->format('M d, Y h:i A');
+
+        $this->notifyAdmins(
+            "Appointment for {$studentName} was marked as completed by {$completedBy->name} on {$completedAt}."
+        );
 
         return response()->json([
             'success' => true,
@@ -453,6 +476,17 @@ private function notify($userId, $message)
     event(new BroadcastEvent($userId, $message));
 }
 
+private function notifyAdmins(string $message): void
+{
+    $admins = \App\Models\User::query()
+        ->where('role', 'admin')
+        ->get();
+
+    foreach ($admins as $admin) {
+        $this->notify($admin->id, $message);
+    }
+}
+
 public function nurseDashboard()
 {
     // ⏳ Pending (no date yet)
@@ -480,6 +514,51 @@ $upcomingAppointments = Appointment::with('student')
     $students = \App\Models\User::where('role', 'student')
         ->orderBy('name')
         ->get();
+
+    $guardianPhoneByStudentId = [];
+    if (Schema::hasTable('patients')) {
+        if (Schema::hasColumn('patients', 'student_id')) {
+            $guardianPhoneByStudentId = \App\Models\Patient::query()
+                ->whereNotNull('student_id')
+                ->pluck('phone', 'student_id')
+                ->toArray();
+        } elseif (Schema::hasColumn('patients', 'email')) {
+            $guardianPhoneByStudentId = \App\Models\Patient::query()
+                ->whereNotNull('email')
+                ->whereNotNull('phone')
+                ->pluck('phone', 'email')
+                ->toArray();
+        }
+    }
+
+    $latestGuardianLogs = GuardianSmsLog::query()
+        ->whereNotNull('student_id')
+        ->orderByDesc('created_at')
+        ->get()
+        ->unique('student_id')
+        ->keyBy('student_id');
+
+    $students->each(function ($student) use ($guardianPhoneByStudentId, $latestGuardianLogs) {
+        $latestLog = $latestGuardianLogs->get($student->id);
+
+        $guardianName = $student->guardian_name ?? null;
+        if (!$guardianName && $latestLog) {
+            $guardianName = $latestLog->guardian_name;
+        }
+
+        $guardianPhone = $student->guardian_phone ?? null;
+        if (!$guardianPhone) {
+            $guardianPhone = $guardianPhoneByStudentId[$student->id]
+                ?? $guardianPhoneByStudentId[$student->email]
+                ?? null;
+        }
+        if (!$guardianPhone && $latestLog) {
+            $guardianPhone = $latestLog->guardian_phone;
+        }
+
+        $student->guardian_name = $guardianName ?? '';
+        $student->guardian_phone = $guardianPhone ?? '';
+    });
 
     return view('nurse.dashboard', compact(
     'pendingAppointments',
@@ -518,3 +597,6 @@ public function startSession(Appointment $appointment)
 }
 
 }
+
+
+

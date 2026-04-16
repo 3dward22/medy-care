@@ -12,6 +12,18 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    private function illnessBreakdown(Carbon $start, Carbon $end)
+    {
+        return DB::table('appointment_completions')
+            ->select('sickness', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('sickness')
+            ->whereBetween('completed_datetime', [$start, $end])
+            ->groupBy('sickness')
+            ->orderByDesc('total')
+            ->orderBy('sickness')
+            ->get();
+    }
+
     public function index()
     {
         if (!Auth::check()) {
@@ -35,12 +47,17 @@ class DashboardController extends Controller
 
     // 👥 Users for the table
     $users = User::latest()->take(10)->get(); // or paginate
+    $now = Carbon::now();
+    $weeklyIllnessCounts = $this->illnessBreakdown($now->copy()->startOfWeek(), $now->copy()->endOfWeek());
+    $monthlyIllnessCounts = $this->illnessBreakdown($now->copy()->startOfMonth(), $now->copy()->endOfMonth());
 
     return view('dashboard', [
         'patientsCount'       => $patientsCount,
         'appointmentsCount'  => $appointmentsCount,
         'latestAppointments' => $latestAppointments,
         'users'               => $users,
+        'weeklyIllnessCounts' => $weeklyIllnessCounts,
+        'monthlyIllnessCounts' => $monthlyIllnessCounts,
     ]);
 
 

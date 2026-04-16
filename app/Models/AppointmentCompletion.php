@@ -12,6 +12,7 @@ class AppointmentCompletion extends Model
     protected $fillable = [
         'appointment_id',
         'completed_datetime',
+        'sickness',
         'temperature',
         'blood_pressure',
         'heart_rate',

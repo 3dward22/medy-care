@@ -48,11 +48,19 @@ class EmergencyRecordController extends Controller
         'reason'     => 'nullable|string',
     ]);
 
+    $reason = trim((string) $request->reason);
+
     EmergencyRecord::create([
         'student_id'        => $request->student_id,
         'reported_by'       => Auth::id(),
         'reported_at'       => now(),
-        'reason'            => $request->reason,
+        'reason'            => $reason !== '' ? $reason : null,
+        'symptoms'          => $reason !== '' ? $reason : 'Emergency / walk-in visit',
+        'complaint'         => $reason !== '' ? $reason : null,
+        'diagnosis'         => 'Pending assessment',
+        'treatment'         => 'Pending treatment',
+        'findings'          => null,
+        'notes'             => null,
         'guardian_notified' => false,
     ]);
 

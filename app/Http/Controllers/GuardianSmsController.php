@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\GuardianSmsLog;
+use App\Services\GuardianSmsService;
 use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 class GuardianSmsController extends Controller
 {
@@ -58,17 +60,23 @@ class GuardianSmsController extends Controller
             'message' => 'required|string|max:255',
         ]);
 
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
+            $sms = new GuardianSmsService();
+            $sms->send($request->guardian_phone, $request->message);
 
-        GuardianSmsLog::create([
-            'guardian_name'  => $request->guardian_name,
-            'guardian_phone' => $request->guardian_phone,
-            'message'        => $request->message,
-            'sent_by'        => $user->name,
-            'sent_by_id'     => $user->id,
-            'sent_by_role'   => $user->role,
-        ]);
+            GuardianSmsLog::create([
+                'guardian_name'  => $request->guardian_name,
+                'guardian_phone' => $request->guardian_phone,
+                'message'        => $request->message,
+                'sent_by'        => $user->name,
+                'sent_by_id'     => $user->id,
+                'sent_by_role'   => $user->role,
+            ]);
 
-        return back()->with('success', 'SMS sent and logged successfully.');
+            return back()->with('success', 'SMS sent successfully via UniSMS and saved to logs.');
+        } catch (Throwable $e) {
+            return back()->with('error', 'SMS failed: ' . $e->getMessage());
+        }
     }
 }
