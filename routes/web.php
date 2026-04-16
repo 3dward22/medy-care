@@ -16,6 +16,7 @@ use App\Http\Controllers\GuardianSmsController;
 use App\Http\Controllers\Admin\UserVerificationController;
 use App\Http\Controllers\Nurse\StudentRecordController;
 use App\Http\Controllers\NurseController;
+use App\Http\Controllers\NurseReferralController;
 
 
 // routes/web.php
@@ -72,7 +73,9 @@ Route::middleware('auth')->group(function () {
             ->name('admin.appointments.today');
         Route::get('admin/appointments/week', [AdminAppointmentController::class, 'week'])
             ->name('admin.appointments.week');
-
+        Route::put('admin/appointments/{appointment}', [AdminAppointmentController::class, 'update'])
+    ->name('admin.appointments.update');
+    
         // User management
         Route::get('admin/users', [AdminController::class, 'index'])->name('admin.users.index');
         Route::delete('admin/users/{user}', [AdminController::class, 'destroy'])->name('admin.users.destroy');
@@ -157,6 +160,10 @@ Route::get('/students/{student}/records',
         Route::post('/', [\App\Http\Controllers\EmergencyRecordController::class, 'store'])->name('store');
         Route::get('/{emergency}', [\App\Http\Controllers\EmergencyRecordController::class, 'show'])->name('show');
     });
+
+    // 🏥 Referral form
+    Route::get('/referral', [NurseReferralController::class, 'create'])->name('referral.create');
+    Route::post('/referral/download', [NurseReferralController::class, 'download'])->name('referral.download');
 });
 
     /*

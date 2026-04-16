@@ -16,6 +16,27 @@
           </p>
 
           <div class="mb-3">
+            <label for="sms_student_search" class="form-label fw-semibold text-secondary">Search Student</label>
+            <input
+              type="text"
+              id="sms_student_search"
+              class="form-control form-control-lg rounded-3 shadow-sm"
+              list="sms_student_options"
+              placeholder="Type student name..."
+              autocomplete="off">
+            <datalist id="sms_student_options">
+              @foreach($students as $student)
+                <option
+                  value="{{ $student->name }}"
+                  data-guardian-name="{{ $student->guardian_name ?? $student->name }}"
+                  data-guardian-phone="{{ $student->guardian_phone ?? '' }}">
+                </option>
+              @endforeach
+            </datalist>
+            <small class="text-muted">Selecting a student auto-fills guardian details.</small>
+          </div>
+
+          <div class="mb-3">
             <label for="guardian_name" class="form-label fw-semibold text-secondary">Guardian Name</label>
             <input type="text" name="guardian_name" id="guardian_name" class="form-control form-control-lg rounded-3 shadow-sm" placeholder="e.g. Maria Santos" required>
             <div class="invalid-feedback">Please enter the guardian’s name.</div>
@@ -43,9 +64,21 @@
   </div>
 </div>
 
+@php
+  $smsStudents = $students->map(function ($student) {
+      return [
+          'name' => $student->name,
+          'guardian_name' => $student->guardian_name ?? '',
+          'guardian_phone' => $student->guardian_phone ?? '',
+      ];
+  })->values();
+@endphp
+
 <script>
 (() => {
   'use strict'
+  const studentGuardianData = @json($smsStudents)
+
   const forms = document.querySelectorAll('.needs-validation')
   Array.from(forms).forEach(form => {
     form.addEventListener('submit', event => {
@@ -56,5 +89,52 @@
       form.classList.add('was-validated')
     }, false)
   })
+
+  const studentSearchInput = document.getElementById('sms_student_search')
+  const guardianNameInput = document.getElementById('guardian_name')
+  const guardianPhoneInput = document.getElementById('guardian_phone')
+
+  if (studentSearchInput && guardianNameInput && guardianPhoneInput) {
+    const fillGuardianFields = (selectedStudent) => {
+      guardianNameInput.value = selectedStudent.guardian_name || ''
+      guardianPhoneInput.value = selectedStudent.guardian_phone || ''
+    }
+
+    studentSearchInput.addEventListener('input', () => {
+      const query = studentSearchInput.value.trim().toLowerCase()
+      if (query === '') return
+
+      // Exact match first
+      const exactMatch = studentGuardianData.find(
+        student => student.name.toLowerCase() === query
+      )
+      if (exactMatch) {
+        fillGuardianFields(exactMatch)
+        return
+      }
+
+      // Then partial match (first student containing query)
+      const partialMatch = studentGuardianData.find(
+        student => student.name.toLowerCase().includes(query)
+      )
+      if (partialMatch) {
+        fillGuardianFields(partialMatch)
+      }
+    })
+
+    studentSearchInput.addEventListener('blur', () => {
+      const query = studentSearchInput.value.trim().toLowerCase()
+      if (query === '') return
+
+      const bestMatch = studentGuardianData.find(
+        student => student.name.toLowerCase().includes(query)
+      )
+
+      if (bestMatch) {
+        studentSearchInput.value = bestMatch.name
+        fillGuardianFields(bestMatch)
+      }
+    })
+  }
 })()
 </script>

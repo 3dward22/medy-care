@@ -2,6 +2,11 @@
 
 @section('content')
 
+    @php
+        $weeklyMax = max(1, (int) ($weeklyIllnessCounts->max('total') ?? 0));
+        $monthlyMax = max(1, (int) ($monthlyIllnessCounts->max('total') ?? 0));
+    @endphp
+
 
 
     <div class="max-w-7xl mx-auto px-6 py-8">
@@ -73,7 +78,7 @@
         <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
             📄 Monthly Report
         </h3>
-        <span class="text-xs text-gray-500">Export appointments by month</span>
+        <span class="text-xs text-gray-500">Export monthly illness visits and student details</span>
     </div>
 
     <form method="GET" action="{{ route('reports.monthly') }}" class="px-6 py-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
@@ -88,10 +93,90 @@
             type="submit"
             class="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-black text-sm rounded-lg hover:bg-teal-700 transition"
         >
-            ⬇️ Download PDF
+            ⬇️ Monthly Illness Visits
         </button>
     </form>
 </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-10">
+            <div class="bg-white rounded-xl shadow-md border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">Weekly Illness Visits</h3>
+                        <p class="text-xs text-gray-500">Most common reasons for clinic visits this week</p>
+                    </div>
+                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">This Week</span>
+                </div>
+
+                <div class="px-6 py-5">
+                    @if($weeklyIllnessCounts->isNotEmpty())
+                        <div class="overflow-x-auto">
+                            <div class="min-w-[560px]">
+                                <div class="h-72 border-l border-b border-gray-200 px-4 py-3 bg-gradient-to-t from-gray-50 to-white">
+                                    <div class="h-full flex items-end gap-4">
+                                        @foreach($weeklyIllnessCounts as $illness)
+                                            <div class="flex-1 min-w-[72px] h-full flex flex-col justify-end items-center">
+                                                <div class="text-xs font-semibold text-gray-500 mb-2">{{ $illness->total }}</div>
+                                                <div
+                                                    class="rounded-t-lg shadow-sm"
+                                                    style="width: 56px; height: {{ max(24, round(($illness->total / $weeklyMax) * 180)) }}px; background: linear-gradient(to top, #2563eb, #22d3ee);"
+                                                    title="{{ $illness->sickness }}: {{ $illness->total }} visits"
+                                                ></div>
+                                                <div class="mt-3 text-center">
+                                                    <div class="text-xs font-medium text-gray-700 leading-tight break-words">{{ $illness->sickness }}</div>
+                                                    <div class="text-[11px] text-gray-400">{{ $illness->total }} visit{{ $illness->total > 1 ? 's' : '' }}</div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-500">No completed appointments with illness data yet for this week.</p>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">Monthly Illness Visits</h3>
+                        <p class="text-xs text-gray-500">Most common reasons for clinic visits this month</p>
+                    </div>
+                    <span class="text-xs font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">This Month</span>
+                </div>
+
+                <div class="px-6 py-5">
+                    @if($monthlyIllnessCounts->isNotEmpty())
+                        <div class="overflow-x-auto">
+                            <div class="min-w-[560px]">
+                                <div class="h-72 border-l border-b border-gray-200 px-4 py-3 bg-gradient-to-t from-gray-50 to-white">
+                                    <div class="h-full flex items-end gap-4">
+                                        @foreach($monthlyIllnessCounts as $illness)
+                                            <div class="flex-1 min-w-[72px] h-full flex flex-col justify-end items-center">
+                                                <div class="text-xs font-semibold text-gray-500 mb-2">{{ $illness->total }}</div>
+                                                <div
+                                                    class="rounded-t-lg shadow-sm"
+                                                    style="width: 56px; height: {{ max(24, round(($illness->total / $monthlyMax) * 180)) }}px; background: linear-gradient(to top, #0f766e, #34d399);"
+                                                    title="{{ $illness->sickness }}: {{ $illness->total }} visits"
+                                                ></div>
+                                                <div class="mt-3 text-center">
+                                                    <div class="text-xs font-medium text-gray-700 leading-tight break-words">{{ $illness->sickness }}</div>
+                                                    <div class="text-[11px] text-gray-400">{{ $illness->total }} visit{{ $illness->total > 1 ? 's' : '' }}</div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-500">No completed appointments with illness data yet for this month.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
 
 
         <div class="bg-white rounded-xl shadow-md border border-gray-100 mb-10">

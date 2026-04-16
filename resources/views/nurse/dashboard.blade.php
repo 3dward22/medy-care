@@ -91,6 +91,9 @@
                 <button class="btn btn-light btn-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#sendSmsModal">
                     📩 Send SMS to Guardian
                 </button>
+                <a href="{{ route('nurse.referral.create') }}" class="btn btn-warning btn-pill shadow-sm">
+                    🏥 Referral Form
+                </a>
                 <a href="{{ route('nurse.students.index') }}"
        class="btn btn-info btn-pill shadow-sm">
         📖 Student Records
@@ -321,6 +324,25 @@
               <input type="text" name="heart_rate" class="form-control" placeholder="e.g. 72">
             </div>
 
+            <div class="col-md-6">
+    <label class="form-label fw-semibold">Sickness</label>
+    <select name="sickness" id="sicknessSelect" class="form-select" required>
+        <option value="">-- Select Sickness --</option>
+        <option value="Fever">Fever</option>
+        <option value="Headache">Headache</option>
+        <option value="Stomachache">Stomachache</option>
+        <option value="Cough">Cough</option>
+        <option value="Colds">Colds</option>
+        <option value="Dizziness">Dizziness</option>
+        <option value="Others">Others</option>
+    </select>
+</div>
+
+            <div class="col-md-6 d-none" id="otherSicknessDiv">
+              <label class="form-label fw-semibold">Specify Illness</label>
+              <input type="text" name="other_sickness" id="otherSicknessInput" class="form-control" placeholder="Enter illness name">
+            </div>
+
             <div class="col-12">
               <label class="form-label fw-semibold">Findings</label>
               <textarea name="findings" class="form-control" rows="2"
@@ -354,7 +376,7 @@
       <div class="modal-content">
         <div class="modal-header bg-danger text-white">
           <h5 class="modal-title">🚨 Emergency Appointment</h5>
-          <button class="btn-close" data-bs-dismiss="modal"></button>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <label>Student</label>
@@ -365,8 +387,9 @@
           <textarea name="reason" class="form-control" placeholder="e.g. difficulty breathing..."></textarea>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-danger">Save Emergency</button>
-        </div>
+<button type="submit" class="btn btn-danger">
+    Save Emergency
+</button>        </div>
       </div>
     </form>
   </div>
@@ -496,6 +519,10 @@ completeModal.addEventListener('show.bs.modal', (event) => {
     // ✅ Pre-fill completion datetime with current time
     const now = new Date().toISOString().slice(0, 16);
     completeForm.querySelector('input[name="completed_datetime"]').value = now;
+    document.getElementById('sicknessSelect').value = '';
+    document.getElementById('otherSicknessInput').value = '';
+    document.getElementById('otherSicknessInput').required = false;
+    document.getElementById('otherSicknessDiv').classList.add('d-none');
 });
 
 completeForm.addEventListener('submit', async function (e) {
@@ -554,6 +581,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 5000); // refresh every 5 seconds
 });
 
+const sicknessSelect = document.getElementById('sicknessSelect');
+const otherDiv = document.getElementById('otherSicknessDiv');
+const otherSicknessInput = document.getElementById('otherSicknessInput');
+
+if (sicknessSelect && otherDiv && otherSicknessInput) {
+    sicknessSelect.addEventListener('change', function () {
+        const shouldShowOther = this.value === 'Others';
+        otherDiv.classList.toggle('d-none', !shouldShowOther);
+        otherSicknessInput.required = shouldShowOther;
+
+        if (!shouldShowOther) {
+            otherSicknessInput.value = '';
+        }
+    });
+}
 </script>
 
 

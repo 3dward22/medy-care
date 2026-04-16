@@ -23,11 +23,10 @@ return [
         ],
     ],
 
-    // 👇 ADD THIS
-    'twilio' => [
-        'sid'   => env('TWILIO_SID'),
-        'token' => env('TWILIO_TOKEN'),
-        'from'  => env('TWILIO_FROM'),
+    'unisms' => [
+        'secret_key' => env('UNISMS_SECRET_KEY'),
+        'url' => env('UNISMS_URL', 'https://unismsapi.com/api/sms'),
     ],
 
 ];
+
